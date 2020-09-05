@@ -1,7 +1,10 @@
 
 # %%
 import numpy as np
+import matplotlib
+matplotlib.use('TkAgg')
 import matplotlib.pyplot as plt
+import numpy as np
 from matplotlib.colors import ListedColormap
 from sklearn.model_selection import train_test_split
 from sklearn.preprocessing import StandardScaler
@@ -93,7 +96,7 @@ for ds_cnt, ds in enumerate(datasets):
 
         # Put the result into a color plot
         Z = Z.reshape(xx.shape)
-        ax.contourf(xx, yy, Z, cmap=cm, alpha=.8)
+        #ax.contourf(xx, yy, Z, cmap=cm, alpha=.8)
 
         # Plot the training points
         ax.scatter(X_train[:, 0], X_train[:, 1], c=y_train, cmap=cm_bright,
@@ -115,4 +118,4 @@ for ds_cnt, ds in enumerate(datasets):
 plt.tight_layout()
 plt.show()
 
-# %%
+ # %%

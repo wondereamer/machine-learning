@@ -15,7 +15,7 @@ def attr_analyze():
     x1 = iris.data[:, 0]  # we only take the first two features.
     y = iris.target
     num_bins = 20
-    d1.hist_plot(x1, ax, num_bins)
+    d1.hist(ax, x1, num_bins)
     plt.show()
 
 
@@ -52,5 +52,5 @@ def data_normalize():
     plt.show()
 
 if __name__ == "__main__":
-    #data_normalize()
-    attr_analyze()
+    data_normalize()
+    #attr_analyze()

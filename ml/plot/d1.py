@@ -1,14 +1,8 @@
 import numpy as np
-import matplotlib
-matplotlib.use('TkAgg')
-import matplotlib.pyplot as plt
-
-import matplotlib
-import numpy as np
 import matplotlib.pyplot as plt
 
 
-def hist(x, ax, num_bins, y=None, orientation='vertical'):
+def hist(ax, x, num_bins, y=None, orientation='vertical'):
      ## num_bins太大可能有空隙，下面注释的代码能确保没有空隙
      # ymax = np.max(y)
      # ymin = np.min(y)
@@ -27,7 +21,7 @@ def hist(x, ax, num_bins, y=None, orientation='vertical'):
 
 def plot_hist(x1, num_bins, y=None):
      fig, axes = plt.subplots(nrows=2, sharex=False)
-     hist(x1, axes[0], num_bins)
+     hist(axes[0], x1, num_bins)
      axes[1].plot(x1, "ro--")
      axes[1].plot(np.sort(x1))
      plt.show()
