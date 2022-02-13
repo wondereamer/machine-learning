@@ -70,10 +70,10 @@ class AxWidget(object):
         self.name = name
 
     def plot_line(self, widget, ydata, style, lw, ms):
-        widget.plot(ydata, style, lw=lw, ms=ms, label=self.name)
+        return widget.plot(ydata, style, lw=lw, ms=ms, label=self.name)
 
     def plot_line_withx(self, widget, _xdata, ydata, style, lw, ms):
-        widget.plot(_xdata, ydata, style, lw=lw, ms=ms, label=self.name)
+        return widget.plot(_xdata, ydata, style, lw=lw, ms=ms, label=self.name)
 
 
 class QtWidget(object):
@@ -104,6 +104,9 @@ class Plotter(object):
         self.widget = widget
         self._upper = self._lower = None
         self._xdata = None
+        self.zorder = 0
+        self.zorder_switch = False
+        self.visible_switch = False
 
     def plot_line(self, *args, **kwargs):
         """ 画线
@@ -119,20 +122,12 @@ class Plotter(object):
             if len(args) == 2:
                 ydata = args[0]
                 style = args[1]
-                # 区分绘图容器。
-                if isinstance(self.widget, Axes):
-                    self.ax_widget.plot_line(self.widget, ydata, style, lw, ms)
-                else:
-                    self.qt_widget.plot_line(self.widget, ydata, style, lw, ms)
+                return self.ax_widget.plot_line(self.widget, ydata, style, lw, ms)
             elif len(args) == 3:
                 _xdata = args[0]
                 ydata = args[1]
                 style = args[2]
-                # 区分绘图容器。
-                if isinstance(self.widget, Axes):
-                    self.ax_widget.plot_line_withx(self.widget, _xdata, ydata, style, lw, ms)
-                else:
-                    self.qt_widget.plot_line_withx(self.widget, _xdata, ydata, style, lw, ms)
+                return self.ax_widget.plot_line_withx(self.widget, _xdata, ydata, style, lw, ms)
 
     def plot(self, widget):
         """ 如需绘制指标，则需重载此函数。 """
@@ -186,3 +181,58 @@ class Plotter(object):
                 l_temp = list(temp)
                 self._xdata = l_temp[0]
                 self.values = l_temp[1]
+
+
+class Volume(Plotter):
+    ## @TODO 改成技术指标
+    """ 柱状图。 """
+    @plot_init
+    def __init__(self, open, close, volume, name='volume',
+                 colorup='r', colordown='b', width=1):
+        super(Volume, self).__init__(name, None)
+        self.values = np.asarray(volume)
+
+    def plot(self, widget):
+        import mpl_finance as finance
+        self.widget = widget
+        return finance.volume_overlay(widget, self.open, self.close, self.volume,
+                               self.colorup, self.colordown, self.width)
+
+
+
+# def ndarray(data):
+#     """ 如果是序列变量，返回ndarray浅拷贝 """
+#     if isinstance(data, series.NumberSeries):
+#         data = data.data
+#     elif isinstance(data, pandas.Series) or isinstance(data, list):
+#         data = np.asarray(data)
+#     if not isinstance(data, np.ndarray):
+#         raise DataFormatError(type=type(data))
+#     return data
+
+
+## @TODO merge Line and LineWithX and move to plotting module
+class Line(Plotter):
+    """ 画线 """
+    @plot_init
+    def __init__(self, ydata, name='Line', style='black', lw=1):
+        super(Line, self).__init__(name, None)
+        self.values = ydata
+
+    def plot(self, widget):
+        self.widget = widget
+        return self.plot_line(self.values, self.style, lw=self.lw)
+
+
+
+class LineWithX(Plotter):
+    """ 画线 """
+    @plot_init
+    def __init__(self, xdata, ydata, name='LineWithX', style='black', lw=1, ms=1):
+        super(LineWithX, self).__init__(name, None)
+        self.values = ydata
+        self._xdata = xdata
+
+    def plot(self, widget):
+        self.widget = widget
+        return self.plot_line(self.xdata, self.values, self.style, lw=self.lw, ms=self.ms)

@@ -1,4 +1,9 @@
 {
     "restructuredtext.confPath": "",
-    "python.pythonPath": "/Users/wdj/Work/py3/bin/python3.6"
+    "workbench.activityBar.visible": true,
+    "editor.minimap.enabled": false,
+    "python.envFile": "${workspaceFolder}/.env",
+    "omnisharp.enableImportCompletion": true,
+    "workbench.settings.useSplitJSON": true,
+    "workbench.settings.openDefaultSettings": true
 }
