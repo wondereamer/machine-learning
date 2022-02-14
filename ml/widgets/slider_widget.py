@@ -1,7 +1,7 @@
 '''
 Author: your name
 Date: 2022-02-12 08:08:34
-LastEditTime: 2022-02-12 08:08:34
+LastEditTime: 2022-02-14 13:17:28
 LastEditors: Please set LastEditors
 Description: 打开koroFileHeader查看配置 进行设置: https://github.com/OBKoro1/koro1FileHeader/wiki/%E9%85%8D%E7%BD%AE
 FilePath: /machine-learning/ml/widgets/slider_widget.py
@@ -9,6 +9,7 @@ FilePath: /machine-learning/ml/widgets/slider_widget.py
 
 import six
 from matplotlib.widgets import AxesWidget
+from .base_widget import BaseWidget
 
 
 
@@ -23,7 +24,7 @@ def slider_strtime_format(delta):
         return '%H:%M'
 
 
-class Slider(AxesWidget):
+class Slider(AxesWidget, BaseWidget):
     """
     A slider representing a floating point range
 
@@ -58,7 +59,7 @@ class Slider(AxesWidget):
     Call :meth:`add_observer` to connect to the slider event
     """
 
-    def __init__(self, ax, name, label, valmin, valmax, valinit=0.5, width=1, valfmt='%1.2f',
+    def __init__(self, ax, name, parent, label, valmin, valmax, valinit=0.5, width=1, valfmt='%1.2f',
                  time_index = None, closedmin=True, closedmax=True, slidermin=None,
                  slidermax=None, drag_enabled=True, **kwargs):
         """
@@ -86,6 +87,7 @@ class Slider(AxesWidget):
         valid property names (e.g., *facecolor*, *edgecolor*, *alpha*, ...)
         """
         AxesWidget.__init__(self, ax)
+        BaseWidget.__init__(self, name, None, parent)
         self.label = ax.text(-0.02, 0.5, label, transform=ax.transAxes,
                              verticalalignment='center',
                              horizontalalignment='right')
@@ -106,7 +108,6 @@ class Slider(AxesWidget):
 
         #ax.set_xticks([]) # disable ticks
         ax.set_navigate(False)
-        self._connect()
 
     def _xticks_to_display(self, valmax):
         interval = valmax / 5
@@ -179,36 +180,34 @@ class Slider(AxesWidget):
         if (self.val != self.valinit):
             self._set_val(self.valinit)
 
-    def _connect(self):
-        # 信号连接。
-        self.connect_event('button_press_event', self.on_event)
-        self.connect_event('button_release_event', self.on_event)
-        if self.drag_enabled:
-            self.connect_event('motion_notify_event', self.on_event)
+    def on_mouse_motion(self, event):
+        if not self.drag_enabled:
+            return
+        if event.button != 1 or not self.drag_active:
+            return
+        self._update(event.xdata)
+        setattr(event, "update_observer", True)
+        self._update_observer(event)
 
-    def on_event(self, event):
-        """update the slider position"""
-        if self.ignore(event):
+    def on_button_release(self, event):
+        if event.button != 1 or not self.drag_active:
             return
-        if event.button != 1:
-            return
-        if event.name == 'button_press_event' and event.inaxes == self.ax:
-            self.drag_active = True
-            event.canvas.grab_mouse(self.ax)
-        if not self.drag_active:
-            return
-        elif event.name == 'button_press_event' and event.inaxes != self.ax:
-            self.drag_active = False
-            event.canvas.release_mouse(self.ax)
-            return
-        elif event.name == 'button_release_event' and event.inaxes == self.ax:
+        if  event.inaxes == self.ax:
             self.drag_active = False
             event.canvas.release_mouse(self.ax)
             self._update_observer(event)
+
+    def on_button_press(self, event):
+        print(self.name + " " + event.source)
+        print(event.inaxes == self.ax)
+        if event.button != 1:
             return
-        self._update(event.xdata)
-        self._update_observer(event)
-        # 重绘
+        if event.inaxes == self.ax:
+            self.drag_active = True
+            event.canvas.grab_mouse(self.ax)
+        else:
+            self.drag_active = False
+            event.canvas.release_mouse(self.ax)
 
     def _update(self, val, width=None):
         if val <= self.valmin:

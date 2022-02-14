@@ -66,7 +66,6 @@ class TechnicalWidget(BaseWidget):
 
     def draw_widgets(self):
         """ 显示控件 """
-        self._reset_auxiliary_widgets()
         self._window_left = self._data_length - self._w_width
         self._window_right = self._data_length
         # create cursor after all subwidgets added
@@ -75,23 +74,6 @@ class TechnicalWidget(BaseWidget):
                                     color='r', lw=2, horizOn=True,
                                     vertOn=True)
         self._update_widgets()
-
-    def _reset_auxiliary_widgets(self):
-        if self._slider is None:
-            self._slider = Slider(self._slider_ax, "slider", '', 0, self._data_length-1,
-                                        self._data_length-1, self._data_length/50, "%d",
-                                        self._data.index)
-            self._slider.add_observer(self)
-        else:
-            self._slider.reinit( 0, self._data_length-1, self._data_length-1,
-                    self._data_length/50, "%d", self._data.index)
-        if self._bigger_picture_plot:
-            self._bigger_picture_plot.pop(0).remove()
-        self._bigger_picture_plot = self._bigger_picture.plot(self._data['close'].values, 'b')
-        self._bigger_picture.set_ylim((min(self._data['low']), max(self._data['high'])))
-        self._bigger_picture.set_xlim((0, len(self._data['close'])))
-        self._slider_ax.xaxis.set_major_formatter(TimeFormatter(self._data.index,
-                                                                fmt='%Y-%m-%d'))
 
     def add_widget(self, ith_subwidget, widget, ymain=False, connect_slider=False):
         """ 添加一个能接收消息事件的控件。
@@ -124,12 +106,13 @@ class TechnicalWidget(BaseWidget):
                 self._window_left = self._window_right - self._w_width
         def on_press_event():
             self._bigger_picture.set_zorder(1000)
-            self._slider_cursor = MultiCursor(self._fig.canvas,
-                                    [self._slider_ax, self._bigger_picture], color='y',
-                                    lw=2, horizOn=False, vertOn=True)
+            self._cursor = None
         def on_release_event():
             self._bigger_picture.set_zorder(0)
-            del self._slider_cursor
+            self._cursor = MultiCursor(self._fig.canvas,
+                                        list(self._cursor_axes.values()),
+                                        color='r', lw=2, horizOn=True,
+                                        vertOn=True)
 
         if event.name == "button_press_event":
             on_press_event()
@@ -143,8 +126,8 @@ class TechnicalWidget(BaseWidget):
     def on_key_release(self, event):
         def update_window():
             middle = (self._window_left+self._window_right)/2
-            self._window_left =  middle - self._w_width/2
-            self._window_right = middle + self._w_width/2
+            self._window_left =  int(middle - self._w_width/2)
+            self._window_right = int(middle + self._w_width/2)
             self._window_left = max(0, self._window_left)
             self._window_right = min(self._data_length, self._window_right)
 
@@ -187,7 +170,7 @@ class TechnicalWidget(BaseWidget):
         self._slider = None
         self._bigger_picture_plot = None
 
-        self._slider = Slider(self._slider_ax, "slider", '', 0, self._data_length-1,
+        self._slider = Slider(self._slider_ax, "slider", self, '', 0, self._data_length-1,
                                     self._data_length-1, self._data_length/50, "%d",
                                     self._data.index)
         self._slider.add_observer(self)
@@ -248,8 +231,8 @@ class TechnicalWidget(BaseWidget):
         index = x-f if f < 0.5 else min(x-f+1, len(self._data['open']) - 1)
         delta = (self._data.index[1] - self._data.index[0])
         fmt = slider_strtime_format(delta)
-        index = int(index)
         ## @note 字符串太长会引起闪烁
+        index = int(index) - 1
         return "[dt=%s o=%.2f c=%.2f h=%.2f l=%.2f]" % (
                 self._data.index[index].strftime(fmt),
                 self._data['open'][index],
@@ -277,6 +260,38 @@ class TechnicalWidget(BaseWidget):
             else:
                 xticks.append(0)
         return xticks
+
+    def connect_event_handlers(self):
+        """
+        matplotlib信号连接。
+        """
+        self.cidpress = self._fig.canvas.mpl_connect( "button_press_event", self.dispatch_event)
+        self.cidrelease = self._fig.canvas.mpl_connect( "button_release_event", self.dispatch_event)
+        self.cidmotion = self._fig.canvas.mpl_connect( "motion_notify_event", self.dispatch_event)
+        self._fig.canvas.mpl_connect('axes_enter_event', self._on_enter_axes)
+        self._fig.canvas.mpl_connect('axes_leave_event', self._on_leave_axes)
+        self._fig.canvas.mpl_connect('key_release_event', self.dispatch_event)
+
+    def _disconnect(self):
+        self._fig.canvas.mpl_disconnect(self.cidmotion)
+        self._fig.canvas.mpl_disconnect(self.cidrelease)
+        self._fig.canvas.mpl_disconnect(self.cidpress)
+
+    def dispatch_event(self, event, set_source=True):
+        if (hasattr(event, "source") and event.source == self.name):
+            # ingore event emitted by self
+            return
+
+        if (set_source):
+            setattr(event, "source", self.name)
+
+        self.handle_event(event)
+
+        if self.parent is not None:
+            self.parent.dispatch_event(event, False)
+        self._slider.dispatch_event(event, False)
+        for widget in self._child_widgets.values():
+            widget.dispatch_event(event, False)
 
 
 class TimeFormatter(Formatter):

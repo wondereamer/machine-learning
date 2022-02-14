@@ -1,7 +1,7 @@
 '''
 Author: your name
 Date: 2022-02-12 08:05:30
-LastEditTime: 2022-02-13 22:44:53
+LastEditTime: 2022-02-14 12:59:12
 LastEditors: Please set LastEditors
 Description: 打开koroFileHeader查看配置 进行设置: https://github.com/OBKoro1/koro1FileHeader/wiki/%E9%85%8D%E7%BD%AE
 FilePath: /machine-learning/ml/widgets/fame_widgets.py
@@ -12,22 +12,22 @@ from matplotlib.widgets import AxesWidget
 from .base_widget import BaseWidget
 
 
-class FrameWidget(BaseWidget):
+class FrameWidget(AxesWidget, BaseWidget):
     """
     蜡烛线控件。
 
     """
     def __init__(self, ax, name, wdlength, min_wdlength):
+        AxesWidget.__init__(self, ax)
         BaseWidget.__init__(self, name, None)
-        # AxesWidget.__init__(self, ax)
         self.wdlength = wdlength
         self.min_wdlength = min_wdlength
         self.voffset = 0
         self.plotters = { }
         self.ax = ax
-
         self.cnt = 0
         self.observers = {}
+        # self.connect_event('button_press_event', self.dispatch_event)
 
     def add_plotter(self, plotter, twinx):
         """ 添加并绘制, 不允许重名的plotter """
@@ -68,7 +68,11 @@ class FrameWidget(BaseWidget):
         pass
 
     def on_button_press(self, event):
-        print("%s fame widgets;;;;button_press" % self.name)
+        print(self.name + " " + event.source)
+        print(event.inaxes == self.ax)
+        # TODO  parent -> slider -> parent
+        # TODO  parent -> subwidget     source:parent
+
 
     # def _update(self, event):
     #     """update the slider position"""
