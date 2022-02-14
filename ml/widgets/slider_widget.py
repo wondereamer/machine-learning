@@ -1,7 +1,7 @@
 '''
 Author: your name
 Date: 2022-02-12 08:08:34
-LastEditTime: 2022-02-14 13:17:28
+LastEditTime: 2022-02-15 07:02:03
 LastEditors: Please set LastEditors
 Description: 打开koroFileHeader查看配置 进行设置: https://github.com/OBKoro1/koro1FileHeader/wiki/%E9%85%8D%E7%BD%AE
 FilePath: /machine-learning/ml/widgets/slider_widget.py
@@ -59,7 +59,7 @@ class Slider(AxesWidget, BaseWidget):
     Call :meth:`add_observer` to connect to the slider event
     """
 
-    def __init__(self, ax, name, parent, label, valmin, valmax, valinit=0.5, width=1, valfmt='%1.2f',
+    def __init__(self, fig, ax, name, parent, label, valmin, valmax, valinit=0.5, width=1, valfmt='%1.2f',
                  time_index = None, closedmin=True, closedmax=True, slidermin=None,
                  slidermax=None, drag_enabled=True, **kwargs):
         """
@@ -86,8 +86,8 @@ class Slider(AxesWidget, BaseWidget):
         knob.  See the :class:`matplotlib.patches.Rectangle` documentation
         valid property names (e.g., *facecolor*, *edgecolor*, *alpha*, ...)
         """
+        BaseWidget.__init__(self, name, fig, parent)
         AxesWidget.__init__(self, ax)
-        BaseWidget.__init__(self, name, None, parent)
         self.label = ax.text(-0.02, 0.5, label, transform=ax.transAxes,
                              verticalalignment='center',
                              horizontalalignment='right')
@@ -105,6 +105,7 @@ class Slider(AxesWidget, BaseWidget):
         self.drag_enabled = drag_enabled
         self.observers = {}
         ax.set_yticks([])
+        self.connect_event_handlers()
 
         #ax.set_xticks([]) # disable ticks
         ax.set_navigate(False)
@@ -125,9 +126,6 @@ class Slider(AxesWidget, BaseWidget):
         if ind>=len(self._index) or ind<0: return ''
         return self._index[ind].strftime(self._fmt)
 
-        self._slider = Slider(0, self._data_length-1,
-                                    self._data_length-1, self._data_length/50, "%d",
-                                    self._data.index)
 
     def reinit(self, valmin, valmax, valinit=0.5, width=1, valfmt='%1.2f',
             time_index = None, **kwargs):
@@ -198,7 +196,7 @@ class Slider(AxesWidget, BaseWidget):
             self._update_observer(event)
 
     def on_button_press(self, event):
-        print(self.name + " " + event.source)
+        print(self.name + ".get.." + event.source)
         print(event.inaxes == self.ax)
         if event.button != 1:
             return

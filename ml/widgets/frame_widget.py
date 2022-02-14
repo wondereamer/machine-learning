@@ -1,7 +1,7 @@
 '''
 Author: your name
 Date: 2022-02-12 08:05:30
-LastEditTime: 2022-02-14 12:59:12
+LastEditTime: 2022-02-15 08:03:44
 LastEditors: Please set LastEditors
 Description: 打开koroFileHeader查看配置 进行设置: https://github.com/OBKoro1/koro1FileHeader/wiki/%E9%85%8D%E7%BD%AE
 FilePath: /machine-learning/ml/widgets/fame_widgets.py
@@ -27,7 +27,7 @@ class FrameWidget(AxesWidget, BaseWidget):
         self.ax = ax
         self.cnt = 0
         self.observers = {}
-        # self.connect_event('button_press_event', self.dispatch_event)
+        # self.connect_event_handlers()
 
     def add_plotter(self, plotter, twinx):
         """ 添加并绘制, 不允许重名的plotter """
@@ -68,12 +68,7 @@ class FrameWidget(AxesWidget, BaseWidget):
         pass
 
     def on_button_press(self, event):
-        print(self.name + " " + event.source)
+        print(self.name + " from " + event.source)
         print(event.inaxes == self.ax)
-        # TODO  parent -> slider -> parent
+        # TODO  parent -> slider -> parent -> self
         # TODO  parent -> subwidget     source:parent
-
-
-    # def _update(self, event):
-    #     """update the slider position"""
-    #     self.update(event.xdata)
