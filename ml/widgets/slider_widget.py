@@ -1,15 +1,14 @@
 '''
 Author: your name
 Date: 2022-02-12 08:08:34
-LastEditTime: 2022-02-15 07:02:03
+LastEditTime: 2022-02-15 13:34:38
 LastEditors: Please set LastEditors
 Description: 打开koroFileHeader查看配置 进行设置: https://github.com/OBKoro1/koro1FileHeader/wiki/%E9%85%8D%E7%BD%AE
 FilePath: /machine-learning/ml/widgets/slider_widget.py
 '''
 
 import six
-from matplotlib.widgets import AxesWidget
-from .base_widget import BaseWidget
+from .base_widget import BaseAxesWidget
 
 
 
@@ -24,7 +23,7 @@ def slider_strtime_format(delta):
         return '%H:%M'
 
 
-class Slider(AxesWidget, BaseWidget):
+class Slider(BaseAxesWidget):
     """
     A slider representing a floating point range
 
@@ -86,8 +85,7 @@ class Slider(AxesWidget, BaseWidget):
         knob.  See the :class:`matplotlib.patches.Rectangle` documentation
         valid property names (e.g., *facecolor*, *edgecolor*, *alpha*, ...)
         """
-        BaseWidget.__init__(self, name, fig, parent)
-        AxesWidget.__init__(self, ax)
+        BaseAxesWidget.__init__(self, ax, name, parent)
         self.label = ax.text(-0.02, 0.5, label, transform=ax.transAxes,
                              verticalalignment='center',
                              horizontalalignment='right')
@@ -95,7 +93,6 @@ class Slider(AxesWidget, BaseWidget):
         self.poly = None
         self.reinit(valmin, valmax, valinit, width, valfmt, time_index, **kwargs)
 
-        self.name = name
         self.cnt = 0
         self.closedmin = closedmin
         self.closedmax = closedmax

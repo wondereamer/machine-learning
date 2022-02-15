@@ -10,7 +10,7 @@ import matplotlib.ticker as mticker
 import numpy as np
 from .frame_widget import FrameWidget
 from .slider_widget import Slider, slider_strtime_format
-from .base_widget import BaseWidget
+from .base_widget import BaseFigureWidget
 
 class PlotterInfo(object):
     def __init__(self, plotter, ax_plot):
@@ -23,7 +23,7 @@ class PlotterInfo(object):
         pass
 
 
-class TechnicalWidget(BaseWidget):
+class TechnicalWidget(BaseFigureWidget):
     """ 多窗口控件 """
     def __init__(self, fig, data, left=0.1, bottom=0.05, width=0.85, height=0.9,
             parent=None):
@@ -33,7 +33,7 @@ class TechnicalWidget(BaseWidget):
             fig (Figure): matplotlib绘图容器。
             data (DataFrame): [open, close, high, low]数据表。
         """
-        super().__init__("TechnicalWidget", fig)
+        BaseFigureWidget.__init__(self, fig, "TechnicalWidget")
         self._cursor = None
         self._cursor_axes_index = { }
         self._hoffset = 1

@@ -1,25 +1,23 @@
 '''
 Author: your name
 Date: 2022-02-12 08:05:30
-LastEditTime: 2022-02-15 08:03:44
+LastEditTime: 2022-02-15 13:33:58
 LastEditors: Please set LastEditors
 Description: 打开koroFileHeader查看配置 进行设置: https://github.com/OBKoro1/koro1FileHeader/wiki/%E9%85%8D%E7%BD%AE
 FilePath: /machine-learning/ml/widgets/fame_widgets.py
 '''
 from lib2to3.pytree import Base
 import six
-from matplotlib.widgets import AxesWidget
-from .base_widget import BaseWidget
+from .base_widget import BaseAxesWidget
 
 
-class FrameWidget(AxesWidget, BaseWidget):
+class FrameWidget(BaseAxesWidget):
     """
     蜡烛线控件。
 
     """
     def __init__(self, ax, name, wdlength, min_wdlength):
-        AxesWidget.__init__(self, ax)
-        BaseWidget.__init__(self, name, None)
+        BaseAxesWidget.__init__(self, ax, name, None)
         self.wdlength = wdlength
         self.min_wdlength = min_wdlength
         self.voffset = 0
