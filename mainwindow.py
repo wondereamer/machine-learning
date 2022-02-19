@@ -38,7 +38,7 @@ def plot_strategy(price_data, technicals={}, deals=[], curve=[], marks=[]):
 
     # 绘制第一个窗口
     # 添加k线
-    subwidget1 = FrameWidget(axes[0], "subwidget1", 100, 50)
+    subwidget1 = FrameWidget(axes[0], "subwidget1", len(price_data), 50)
     candles = mplots.Candles(price_data, None, 'candles')
     subwidget1.add_plotter(candles, False)
     line = Line(price_data.open.values)
@@ -57,7 +57,7 @@ def plot_strategy(price_data, technicals={}, deals=[], curve=[], marks=[]):
         subwidget1.add_plotter(indic, False)
 
     # 绘制第2个窗口
-    subwidget2 = FrameWidget(axes[1], "subwidget2", 100, 50)
+    subwidget2 = FrameWidget(axes[1], "subwidget2", len(price_data), 50)
     volume_plotter = Volume(price_data.open, price_data.close, price_data.volume)
     subwidget2.add_plotter(volume_plotter, False)
 

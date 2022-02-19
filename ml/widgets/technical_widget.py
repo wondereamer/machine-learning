@@ -50,7 +50,11 @@ class TechnicalWidget(BaseFigureWidget):
         self._w_width_min = 50
         self._w_width = w_width
         self._init_widgets(*args)
+        self._window_left = self._data_length - self._w_width
+        self._window_right = self._data_length
         self.connect_event_handlers()
+        print("window_size: %s" % (self._data_length))
+        print("window_left: %s" % (self._window_left))
         return self.axes
 
     def load_data(self, data):
@@ -66,25 +70,18 @@ class TechnicalWidget(BaseFigureWidget):
 
     def draw_widgets(self):
         """ 显示控件 """
-        self._window_left = self._data_length - self._w_width
-        self._window_right = self._data_length
-        # create cursor after all subwidgets added
         self._cursor = MultiCursor(self._fig.canvas,
                                     list(self._cursor_axes.values()),
                                     color='r', lw=2, horizOn=True,
                                     vertOn=True)
-        self.axes[0].set_xlim((int(self._window_left), int(self._window_right)))
+        self._set_subwidges_window_position()
+        self._fig.canvas.draw()
+
+    def _set_subwidges_window_position(self):
+        self._window_left = self._data_length - self._w_width
+        self._window_right = self._data_length
         for subwidget in six.itervalues(self._child_widgets):
-            subwidget.update_window_interval(self._window_left, self._window_right)
-        self._fig.canvas.draw()
-
-    def _update_widgets(self):
-        """ 改变可视区域， 在坐标移动后被调用。"""
-        self.axes[0].set_xlim((int(self._window_left), int(self._window_right)))
-        # for subwidget in six.itervalues(self._child_widgets):
-        #     subwidget.set_ylim(self._window_left, self._window_right)
-        self._fig.canvas.draw()
-
+            subwidget.set_window_interval(self._window_left, self._window_right)
 
     def add_widget(self, ith_subwidget, widget):
         """ 添加一个能接收消息事件的控件。
@@ -96,82 +93,31 @@ class TechnicalWidget(BaseFigureWidget):
         Returns:
             AxesWidget. widget
         """
-        # 对新创建的Axes做相应的处理
-        # 并且调整Cursor
+        widget.window_size = self._w_width
+        widget.window_left = self._window_left
+        widget.parent = self
         for plotter in six.itervalues(widget.plotters):
             if plotter.twinx:
                 plotter.ax.format_coord = self._format_coord
                 self.axes.append(plotter.ax)
         self._child_widgets[ith_subwidget] = widget
-        widget.parent = self
         return widget
 
     def on_slider(self, event):
         """ 滑块事件处理。 """
-        val = event.position
-        def update_window():
-            self._window_left = int(val)
-            self._window_right = self._window_left+self._w_width
-            if self._window_right >= self._data_length:
-                self._window_right = self._data_length - 1 + self._hoffset
-                self._window_left = self._window_right - self._w_width
-        def on_press_event():
-            self._bigger_picture.set_zorder(1000)
-            self._cursor = None
-        def on_release_event():
-            self._bigger_picture.set_zorder(0)
-            self._cursor = MultiCursor(self._fig.canvas,
-                                        list(self._cursor_axes.values()),
-                                        color='r', lw=2, horizOn=True,
-                                        vertOn=True)
-
-        if event.name == "button_press_event":
-            on_press_event()
-        elif event.name == "button_release_event":
-            on_release_event()
-        elif event.name == "motion_notify_event":
-            pass
-        update_window()
-        self.axes[0].set_xlim((int(self._window_left), int(self._window_right)))
-        self._fig.canvas.draw()
-
-    def update_subwidges_window(self):
-        print(self._window_right - self._window_left)
-        for subwidget in six.itervalues(self._child_widgets):
-            subwidget.update_window_interval(self._window_left, self._window_right)
+        # self._fig.canvas.draw() 一样的，canvas属于fig
+        event.canvas.draw()
 
     def on_key_release(self, event):
-        def update_window():
-            middle = (self._window_left+self._window_right)/2
-            self._window_left =  int(middle - self._w_width/2)
-            self._window_right = int(middle + self._w_width/2)
-            self._window_left = max(0, self._window_left)
-            self._window_right = min(self._data_length, self._window_right)
-
-        if event.key == u"down":
-            self._w_width += self._w_width/2
-            self._w_width = min(self._data_length, self._w_width)
-            update_window()
-            self.update_subwidges_window()
-            self._fig.canvas.draw()
-
-        elif event.key == u"up" :
-            self._w_width -= self._w_width/2
-            self._w_width= max(self._w_width, self._w_width_min)
-            self.update_subwidges_window()
-            self._fig.canvas.draw()
+        for subwidget in six.itervalues(self._child_widgets):
+            subwidget.on_key_release(event)
+        self._fig.canvas.draw()
         # elif event.key == u"super+up":
-        #     six.print_(event.key, "**", type(event.key) )
-        # elif event.key == u"super+down":
-        #     six.print_(event.key, "**", type(event.key) )
-        #     # @TODO page upper down
 
     def on_leave_axes(self, event):
         event.canvas.draw()
 
-
     def _init_widgets(self, *args):
-
         self._slidder_lower = self._bottom
         self._slidder_upper = self._bottom + self._slider_height
         self._bigger_picture_lower = self._slidder_upper
@@ -230,11 +176,6 @@ class TechnicalWidget(BaseFigureWidget):
         for i in range(0, len(self.axes)):
             self._cursor_axes_index[i] = i
 
-
-    def _set_ylim(self, w_left, w_right):
-        """ 设置当前显示窗口的y轴范围。
-        """
-
     def _format_coord(self, x, y):
         """ 状态栏信息显示 """
         index = x
@@ -271,25 +212,6 @@ class TechnicalWidget(BaseFigureWidget):
             else:
                 xticks.append(0)
         return xticks
-
-    # def dispatch_event(self, event, set_source=True):
-    #     if (hasattr(event, "source") and event.source == self.name):
-    #         # ingore event emitted by self
-    #         return
-
-    #     if (set_source):
-    #         setattr(event, "source", self.name)
-
-    #     self.handle_event(event)
-
-    #     if self.parent is not None:
-    #         self.parent.dispatch_event(event, False)
-
-    #     self._slider.dispatch_event(event, False)
-
-    #     for widget in self._child_widgets.values():
-    #         widget.dispatch_event(event, False)
-
 
 class TimeFormatter(Formatter):
     # 分类 －－format

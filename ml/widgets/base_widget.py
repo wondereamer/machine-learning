@@ -1,7 +1,7 @@
 '''
 Author: your name
 Date: 2022-02-13 22:00:56
-LastEditTime: 2022-02-19 10:34:35
+LastEditTime: 2022-02-19 12:24:49
 LastEditors: Please set LastEditors
 Description: 打开koroFileHeader查看配置 进行设置: https://github.com/OBKoro1/koro1FileHeader/wiki/%E9%85%8D%E7%BD%AE
 FilePath: /machine-learning/ml/widgets/base_widget.py
@@ -15,7 +15,8 @@ class BaseWidgetMixin(object):
     def __init__(self, name, widget_size, window_size, parent=None):
         self.name = name
         self.parent = parent
-        self._window_left = 0
+        # start from 1, end with data length
+        self._window_left = 1
         self._window_size = window_size
         self._widget_size = widget_size
         self._child_widgets = { }
@@ -33,11 +34,29 @@ class BaseWidgetMixin(object):
 
     @property
     def window_right(self):
-        return self._window_left + self._window_size
+        return min(self.window_left + self.window_size, self.widget_size)
 
     @property
     def window_left(self):
         return self._window_left
+
+    @window_left.setter
+    def window_left(self, pos):
+        self._window_left = pos
+
+    @property
+    def window_size(self):
+        return self._window_size
+
+    @window_size.setter
+    def window_size(self, size):
+        self._window_size = size
+
+    @property
+    def widget_size(self):
+        return self._widget_size
+
+
 
     def on_enter_axes(self, event):
         pass
@@ -71,9 +90,9 @@ class BaseWidgetMixin(object):
         raise NotImplementedError
 
     def update_window_position(self, position):
-        self._window_left = int(position)
+        self.window_left = int(position)
         if self.window_right >= self._widget_size:
-            self._window_left = int(self.window_right - self._window_size)
+            self.window_left = int(self.window_right - self._window_size)
 
     # def _disconnect(self):
     #     self._fig.canvas.mpl_disconnect(self.cidmotion)

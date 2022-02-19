@@ -1,7 +1,7 @@
 '''
 Author: your name
 Date: 2022-02-12 08:05:30
-LastEditTime: 2022-02-19 11:06:31
+LastEditTime: 2022-02-19 12:42:47
 LastEditors: Please set LastEditors
 Description: 打开koroFileHeader查看配置 进行设置: https://github.com/OBKoro1/koro1FileHeader/wiki/%E9%85%8D%E7%BD%AE
 FilePath: /machine-learning/ml/widgets/fame_widgets.py
@@ -42,7 +42,10 @@ class FrameWidget(BaseAxesWidget):
             plotter.twinx = False
         self.plotters[plotter.name] = plotter
 
-    def update_window_interval(self, w_left, w_right):
+    def on_slider(self, event):
+        self._update_window(event.position)
+
+    def set_window_interval(self, w_left, w_right):
         all_ymax = []
         all_ymin = []
         w_left = int(w_left)
@@ -62,15 +65,32 @@ class FrameWidget(BaseAxesWidget):
         self.ax.set_ylim((ymin, ymax))
         self.ax.set_xlim(w_left, w_right)
 
-    def update_window(self, position):
+    def _update_window(self, position):
         self.update_window_position(position)
-        self.update_window_interval(self.window_left, self.window_right)
-
-    def on_slider(self, event):
-        ## @TODO _set_ylim 分解到这里
-        self.update_window(event.position)
+        self.set_window_interval(self.window_left, self.window_right)
 
     def on_button_press(self, event):
         # TODO  parent -> slider -> parent -> self
         # TODO  parent -> subwidget     source:parent
         pass
+
+    def on_key_release(self, event):
+        if event.key == u"down":
+            middle = (self.window_left + self.window_right) / 2
+            self.window_left =  max(1, int(middle - self.window_size))
+            self.window_size = min(self.widget_size, self._window_size * 2)
+            self.set_window_interval(self.window_left, self.window_right)
+
+            middle = (self.window_left + self.window_right) / 2
+            print("window: ")
+            print((self.window_left, middle, self.window_right, self.window_size))
+
+        elif event.key == u"up" :
+            middle = (self.window_left + self.window_right) / 2
+            self.window_size = min(self.widget_size, int(self._window_size / 2))
+            self.window_left =  max(1, int(middle - self.window_size/2))
+            self.set_window_interval(self.window_left, self.window_right)
+
+            print("window: ")
+            middle = (self.window_left + self.window_right) / 2
+            print((self.window_left, middle, self.window_right, self.window_size))
