@@ -1,7 +1,7 @@
 '''
 Author: your name
 Date: 2022-02-12 08:05:30
-LastEditTime: 2022-02-19 12:42:47
+LastEditTime: 2022-02-19 23:00:56
 LastEditors: Please set LastEditors
 Description: 打开koroFileHeader查看配置 进行设置: https://github.com/OBKoro1/koro1FileHeader/wiki/%E9%85%8D%E7%BD%AE
 FilePath: /machine-learning/ml/widgets/fame_widgets.py
@@ -9,21 +9,15 @@ FilePath: /machine-learning/ml/widgets/fame_widgets.py
 from lib2to3.pytree import Base
 import six
 from .base_widget import BaseAxesWidget
-
+import matplotlib.pyplot as plt
 
 class FrameWidget(BaseAxesWidget):
     """
-    蜡烛线控件。
-
     """
-    def __init__(self, ax, name, widget_size, window_size):
-        BaseAxesWidget.__init__(self, ax, name, widget_size, window_size, None)
-        self.voffset = 0
+    def __init__(self, ax, name, widget_size=None, window_size=None, parent=None):
+        BaseAxesWidget.__init__(self, ax, name, widget_size, window_size, parent)
         self.plotters = { }
         self.ax = ax
-        self.cnt = 0
-        self.observers = {}
-        # self.connect_event_handlers()
 
     def add_plotter(self, plotter, twinx):
         """ 添加并绘制, 不允许重名的plotter """
@@ -42,6 +36,21 @@ class FrameWidget(BaseAxesWidget):
             plotter.twinx = False
         self.plotters[plotter.name] = plotter
 
+    def add_plot(self, plot, name):
+        self.plotters[name] = plot
+
+    def on_button_press(self, event):
+        pass
+
+    def show(self):
+        plt.show()
+
+
+class SliderCompatibleFrameWidget(FrameWidget):
+
+    def __init__(self, ax, name, widget_size, window_size, parent=None):
+        FrameWidget.__init__(self, ax, name, widget_size, window_size, parent)
+
     def on_slider(self, event):
         self._update_window(event.position)
 
@@ -51,8 +60,10 @@ class FrameWidget(BaseAxesWidget):
         w_left = int(w_left)
         w_right = int(w_right)
         for plotter in six.itervalues(self.plotters):
-            if plotter.twinx:
-                continue
+            # TODO what?
+            # if plotter.twinx:
+            #     continue
+            assert w_right > w_left
             ymax, ymin = plotter.y_interval(w_left, w_right)
             ## @todo move ymax, ymin 计算到plot中去。
             all_ymax.append(ymax)
@@ -69,11 +80,6 @@ class FrameWidget(BaseAxesWidget):
         self.update_window_position(position)
         self.set_window_interval(self.window_left, self.window_right)
 
-    def on_button_press(self, event):
-        # TODO  parent -> slider -> parent -> self
-        # TODO  parent -> subwidget     source:parent
-        pass
-
     def on_key_release(self, event):
         if event.key == u"down":
             middle = (self.window_left + self.window_right) / 2
@@ -82,7 +88,6 @@ class FrameWidget(BaseAxesWidget):
             self.set_window_interval(self.window_left, self.window_right)
 
             middle = (self.window_left + self.window_right) / 2
-            print("window: ")
             print((self.window_left, middle, self.window_right, self.window_size))
 
         elif event.key == u"up" :
@@ -94,3 +99,9 @@ class FrameWidget(BaseAxesWidget):
             print("window: ")
             middle = (self.window_left + self.window_right) / 2
             print((self.window_left, middle, self.window_right, self.window_size))
+
+
+class CandleWidget(SliderCompatibleFrameWidget):
+
+    def __init__(self, ax, name, widget_size, window_size, parent=None):
+        SliderCompatibleFrameWidget.__init__(self, ax, name, widget_size, window_size, parent)

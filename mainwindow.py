@@ -31,37 +31,43 @@ def plot_strategy(price_data, technicals={}, deals=[], curve=[], marks=[]):
     """
     six.print_("plotting..")
     fig = plt.figure()
+    window_size = 50
+    widget_size = len(price_data)
+
     frame = TechnicalWidget(fig, price_data)
-    axes = frame.init_layout(
-        min(10, len(price_data)),         # 窗口显示k线数量。
-    )
+    axes = frame.init_layout(min(window_size, len(price_data)))
+
+    # print("-----------")
+    # print(axes[-1].figbox.x0)
+    # print(axes[-1].figbox)
+    subwidget1 = FrameWidget(axes[0], "subwidget1", widget_size, window_size)
+    subwidget2 = FrameWidget(axes[1], "subwidget2", widget_size, window_size)
+    slider = Slider(axes[2], "slider", widget_size, 10, frame, '', 0, widget_size-1,
+                                widget_size-1, widget_size/50, "%d", price_data.index)
+    frame.add_widget(0, subwidget1)
+    frame.add_widget(1, subwidget2)
+    frame.add_widget(2, slider)
+    slider.add_observer(subwidget1.on_slider)
+    slider.add_observer(subwidget2.on_slider)
+    slider.add_observer(frame.on_slider)
 
     # 绘制第一个窗口
     # 添加k线
-    subwidget1 = FrameWidget(axes[0], "subwidget1", len(price_data), 50)
-    candles = mplots.Candles(price_data, None, 'candles')
-    subwidget1.add_plotter(candles, False)
+    candles = mplots.Candles(price_data, 'candles')
     line = Line(price_data.open.values)
     # line.visible_switch = True
     line.zorder_switch = True
+    subwidget1.add_plotter(candles, False)
     subwidget1.add_plotter(line, False)
-
-    widget_size = len(price_data)
-    slider = Slider(axes[2], "slider", widget_size, 10, frame, '', 0, widget_size-1,
-                                widget_size-1, widget_size/50, "%d", price_data.index)
 
     slider.ax.xaxis.set_major_formatter(TimeFormatter(price_data.index, fmt='%Y-%m-%d'))
 
-
     # 绘制第2个窗口
-    subwidget2 = FrameWidget(axes[1], "subwidget2", len(price_data), 50)
     volume_plotter = Volume(price_data.open, price_data.close, price_data.volume)
     subwidget2.add_plotter(volume_plotter, False)
 
-    frame.add_widget(0, subwidget1)
-    frame.add_widget(1, subwidget2)
-    slider.add_observer(subwidget1.on_slider)
-    slider.add_observer(frame.on_slider)
+    frame.show()
+
 
     # subwidgets = [subwidget1, subwidget2]
     # # 交易信号。
@@ -112,7 +118,6 @@ def plot_strategy(price_data, technicals={}, deals=[], curve=[], marks=[]):
     # frame._slider.add_observer(subwidget2.on_slider)
     # frame._slider.add_observer(frame.on_slider)
     # frame.draw_widgets()
-    frame.show()
 
 
 def plot_curves(data, colors=[], lws =[], names=[]):

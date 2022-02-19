@@ -1,7 +1,7 @@
 '''
 Author: your name
 Date: 2022-02-13 22:00:56
-LastEditTime: 2022-02-19 12:24:49
+LastEditTime: 2022-02-19 22:46:39
 LastEditors: Please set LastEditors
 Description: 打开koroFileHeader查看配置 进行设置: https://github.com/OBKoro1/koro1FileHeader/wiki/%E9%85%8D%E7%BD%AE
 FilePath: /machine-learning/ml/widgets/base_widget.py
@@ -19,7 +19,7 @@ class BaseWidgetMixin(object):
         self._window_left = 1
         self._window_size = window_size
         self._widget_size = widget_size
-        self._child_widgets = { }
+        self._child_widgets = []
 
     def _on_enter_axes(self, event):
         # fix matplotlib bug, it will dispatch "motion_notify_event"
@@ -55,6 +55,10 @@ class BaseWidgetMixin(object):
     @property
     def widget_size(self):
         return self._widget_size
+
+    @widget_size.setter
+    def widget_size(self, size):
+        self._widget_size = size
 
 
 
@@ -126,6 +130,7 @@ class BaseAxesWidget(AxesWidget, BaseWidgetMixin):
         AxesWidget.__init__(self, ax)
         BaseWidgetMixin.__init__(self, name, widget_size, window_size, parent)
         self.ax = ax
+        self.connect_event_handlers()
 
     def connect_event_handlers(self):
         """

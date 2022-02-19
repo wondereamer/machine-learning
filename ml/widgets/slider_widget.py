@@ -1,7 +1,7 @@
 '''
 Author: your name
 Date: 2022-02-12 08:08:34
-LastEditTime: 2022-02-19 16:12:11
+LastEditTime: 2022-02-19 23:23:49
 LastEditors: Please set LastEditors
 Description: 打开koroFileHeader查看配置 进行设置: https://github.com/OBKoro1/koro1FileHeader/wiki/%E9%85%8D%E7%BD%AE
 FilePath: /machine-learning/ml/widgets/slider_widget.py
@@ -144,7 +144,7 @@ class Slider(BaseAxesWidget):
         if self.poly:
             self.poly.remove()
         # 滑动条的形状
-        self.poly = self.ax.axvspan(valmax-self.width/2,valmax+self.width/2, 0, 1, **kwargs)
+        self.poly = self.ax.axvspan(valinit-self.width/2, valinit+self.width/2, 0, 1, **kwargs)
         #axhspan
         #self.vline = ax.axvline(valinit, 0, 1, color='r', lw=1)
 

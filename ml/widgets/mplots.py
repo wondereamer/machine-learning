@@ -36,7 +36,7 @@ class Candles(object):
     """
     画蜡烛线。
     """
-    def __init__(self, data, tracker, name='candle',
+    def __init__(self, data, name='candle',
                  width=0.6, colorup='r', colordown='g',
                  lc='k', alpha=1):
         """ Represent the open, close as a bar line and high low range as a
@@ -55,7 +55,6 @@ class Candles(object):
 
         return value is lineCollection, barCollection
         """
-        # super(Candles, self).__init__(tracker, name)
         self.data = data
         self.name = name
         self.width = width
