@@ -42,20 +42,9 @@ class TechnicalWidget(BaseFigureWidget):
         self._slider_height = 0.1
         self._bigger_picture_height = 0.3    # 鸟瞰图高度
         self._all_axes = []
-        self.load_data(data)
         self._cursor_axes = { }
-
-    def init_layout(self, w_width, *args):
-        # 布局参数
-        self._w_width_min = 50
-        self._w_width = w_width
-        self._init_widgets(*args)
-        self._window_left = self._data_length - self._w_width
-        self._window_right = self._data_length
+        self.load_data(data)
         self.connect_event_handlers()
-        print("window_size: %s" % (self._data_length))
-        print("window_left: %s" % (self._window_left))
-        return self.axes
 
     def load_data(self, data):
         self._data = data
@@ -68,20 +57,10 @@ class TechnicalWidget(BaseFigureWidget):
     def plot_text(self, name, ith_ax, x, y, text, color='black', size=10, rotation=0):
         self.axes[ith_ax].text(x, y, text, color=color, fontsize=size, rotation=rotation)
 
-    def draw_widgets(self):
-        """ 显示控件 """
-        self._cursor = MultiCursor(self._fig.canvas,
-                                    list(self._cursor_axes.values()),
-                                    color='r', lw=2, horizOn=True,
-                                    vertOn=True)
-        self._set_subwidges_window_position()
-        self._fig.canvas.draw()
-
-    def _set_subwidges_window_position(self):
-        self._window_left = self._data_length - self._w_width
-        self._window_right = self._data_length
+    def _init_subwidges_window_position(self):
+        self.window_left = self._data_length - self.window_size
         for subwidget in six.itervalues(self._child_widgets):
-            subwidget.set_window_interval(self._window_left, self._window_right)
+            subwidget.set_window_interval(self.window_left, self.window_right)
 
     def add_widget(self, ith_subwidget, widget):
         """ 添加一个能接收消息事件的控件。
@@ -93,8 +72,8 @@ class TechnicalWidget(BaseFigureWidget):
         Returns:
             AxesWidget. widget
         """
-        widget.window_size = self._w_width
-        widget.window_left = self._window_left
+        widget.window_size = self.window_size
+        widget.window_left = self.window_left
         widget.parent = self
         for plotter in six.itervalues(widget.plotters):
             if plotter.twinx:
@@ -103,10 +82,25 @@ class TechnicalWidget(BaseFigureWidget):
         self._child_widgets[ith_subwidget] = widget
         return widget
 
+
     def on_slider(self, event):
         """ 滑块事件处理。 """
+        val = event.position
+        def on_press_event():
+            self._bigger_picture.set_zorder(1000)
+            self._slider_cursor = MultiCursor(self._fig.canvas,
+                                    [self._slider_ax, self._bigger_picture], color='y',
+                                    lw=2, horizOn=False, vertOn=True)
+        def on_release_event():
+            self._bigger_picture.set_zorder(0)
+            del self._slider_cursor
+        if event.name == "button_press_event":
+            on_press_event()
+        elif event.name == "button_release_event":
+            on_release_event()
         # self._fig.canvas.draw() 一样的，canvas属于fig
         event.canvas.draw()
+
 
     def on_key_release(self, event):
         for subwidget in six.itervalues(self._child_widgets):
@@ -117,7 +111,35 @@ class TechnicalWidget(BaseFigureWidget):
     def on_leave_axes(self, event):
         event.canvas.draw()
 
-    def _init_widgets(self, *args):
+    def draw_widgets(self):
+        """ 显示控件 """
+        self._draw_bigger_picture()
+        self._cursor = MultiCursor(self._fig.canvas,
+                                    list(self._cursor_axes.values()),
+                                    color='r', lw=2, horizOn=True,
+                                    vertOn=True)
+        self._init_subwidges_window_position()
+        self._fig.canvas.draw()
+
+    def _draw_bigger_picture(self):
+        self._bigger_picture_plot = self._bigger_picture.plot(self._data['close'].values, 'b')
+        self._bigger_picture.set_ylim((min(self._data['low']), max(self._data['high'])))
+        self._bigger_picture.set_xlim((0, len(self._data['close'])))
+
+    def init_layout(self, w_width, *args):
+        # 布局参数
+        self.window_size = w_width
+        self.window_left = self._data_length - self.window_size
+        print("window_left: %s" % (self.window_left))
+        print("window_size: %s" % (self._data_length))
+
+        self.add_slider_bigger_picture();
+        self.add_user_axes(*args)
+
+        return self.axes
+
+
+    def add_slider_bigger_picture(self):
         self._slidder_lower = self._bottom
         self._slidder_upper = self._bottom + self._slider_height
         self._bigger_picture_lower = self._slidder_upper
@@ -131,18 +153,20 @@ class TechnicalWidget(BaseFigureWidget):
         self._bigger_picture.set_xticklabels([]);
         self._bigger_picture.set_xticks([])
         self._bigger_picture.set_yticks([])
+        self._slider_ax.xaxis.set_major_formatter(TimeFormatter(self._data.index, fmt='%Y-%m-%d'))
         self._all_axes = [self._slider_ax, self._bigger_picture]
-        self._slider = None
-        self._bigger_picture_plot = None
 
         self._slider = Slider(self._fig, self._slider_ax, "slider", self._data_length, self._window_size, self, '', 0, self._data_length-1,
                                     self._data_length-1, self._data_length/50, "%d",
                                     self._data.index)
 
+
+    def add_user_axes(self, *args):
         args = list(reversed(args))
         # 默认子窗口数量为1
         if len(args) ==  0:
             args = (1,)
+
         total_units = sum(args)
         unit = (self._bottom + self._height - self._slidder_upper) / total_units
         bottom = self._slidder_upper
@@ -175,6 +199,7 @@ class TechnicalWidget(BaseFigureWidget):
             [label.set_visible(False) for label in ax.get_xticklabels()]
         for i in range(0, len(self.axes)):
             self._cursor_axes_index[i] = i
+        pass
 
     def _format_coord(self, x, y):
         """ 状态栏信息显示 """

@@ -1,7 +1,7 @@
 '''
 Author: your name
 Date: 2022-02-12 08:08:34
-LastEditTime: 2022-02-19 10:15:16
+LastEditTime: 2022-02-19 14:24:43
 LastEditors: Please set LastEditors
 Description: 打开koroFileHeader查看配置 进行设置: https://github.com/OBKoro1/koro1FileHeader/wiki/%E9%85%8D%E7%BD%AE
 FilePath: /machine-learning/ml/widgets/slider_widget.py
@@ -179,7 +179,7 @@ class Slider(BaseAxesWidget):
             return
         self._update(event.xdata)
         setattr(event, "position", self.val)
-        self._update_observer(event)
+        self._notify_observer(event)
 
     def on_button_release(self, event):
         if event.button != 1 or not self.drag_active:
@@ -188,7 +188,7 @@ class Slider(BaseAxesWidget):
             self.drag_active = False
             event.canvas.release_mouse(self.ax)
             setattr(event, "position", self.val)
-            self._update_observer(event)
+            self._notify_observer(event)
 
     def on_button_press(self, event):
         if event.button != 1:
@@ -196,6 +196,8 @@ class Slider(BaseAxesWidget):
         if event.inaxes == self.ax:
             self.drag_active = True
             event.canvas.grab_mouse(self.ax)
+            setattr(event, "position", self.val)
+            self._notify_observer(event)
         else:
             self.drag_active = False
             event.canvas.release_mouse(self.ax)
@@ -238,7 +240,7 @@ class Slider(BaseAxesWidget):
         if not self.eventson:
             return
 
-    def _update_observer(self, event):
+    def _notify_observer(self, event):
         """ 通知相关窗口更新数据 """
         for handler in self.moved_handlers:
             handler(event)
