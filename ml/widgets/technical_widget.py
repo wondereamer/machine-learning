@@ -1,8 +1,10 @@
 # -*- coding: utf-8 -*-
+from json.tool import main
 from re import S
 import sys
 import six
 # from six.moves import range
+import matplotlib.pyplot as plt
 from matplotlib.widgets import AxesWidget
 from matplotlib.widgets import MultiCursor
 from matplotlib.ticker import Formatter
@@ -23,44 +25,18 @@ class PlotterInfo(object):
         pass
 
 
-class TechnicalWidget(BaseFigureWidget):
-    """ 多窗口控件 """
-    def __init__(self, fig, data, left=0.1, bottom=0.05, width=0.85, height=0.9,
-            parent=None):
+class MultiWidgets(BaseFigureWidget):
+    def __init__(self, fig, plot, axes, name, data, parent=None):
         """ 多窗口联动控件。
 
         Args:
             fig (Figure): matplotlib绘图容器。
             data (DataFrame): [open, close, high, low]数据表。
         """
-        BaseFigureWidget.__init__(self, fig, len(data), 0, "TechnicalWidget")
-        self._cursor = None
-        self._cursor_axes_index = { }
-        self._hoffset = 1
-        self._left, self._width = left, width
-        self._bottom, self._height  = bottom, height
-        self._slider_height = 0.1
-        self._bigger_picture_height = 0.3    # 鸟瞰图高度
-        self._all_axes = []
-        self._cursor_axes = { }
-        self.load_data(data)
+        BaseFigureWidget.__init__(self, fig, len(data), 0, name)
+        self._all_axes = axes
+        self.plot = plot  # todo move to base widget
         self.connect_event_handlers()
-
-    def load_data(self, data):
-        self._data = data
-        self._data_length = len(self._data)
-
-    @property
-    def axes(self):
-        return self._axes
-
-    def plot_text(self, name, ith_ax, x, y, text, color='black', size=10, rotation=0):
-        self.axes[ith_ax].text(x, y, text, color=color, fontsize=size, rotation=rotation)
-
-    def _init_subwidges_window_position(self):
-        self.window_left = self._data_length - self.window_size
-        for subwidget in six.itervalues(self._child_widgets):
-            subwidget.set_window_interval(self.window_left, self.window_right)
 
     def add_widget(self, ith_subwidget, widget):
         """ 添加一个能接收消息事件的控件。
@@ -78,10 +54,58 @@ class TechnicalWidget(BaseFigureWidget):
         for plotter in six.itervalues(widget.plotters):
             if plotter.twinx:
                 plotter.ax.format_coord = self._format_coord
-                self.axes.append(plotter.ax)
+                # self.axes.append(plotter.ax)
         self._child_widgets[ith_subwidget] = widget
         return widget
 
+    def draw_widgets(self):
+        """ 显示控件 """
+        self._fig.canvas.draw()
+
+    def tight_layout(self):
+        # https://matplotlib.org/stable/tutorials/intermediate/tight_layout_guide.html
+        self.plot.tight_layout()
+
+    def show(self):
+        self.plot.show()
+
+
+
+class TechnicalWidget(MultiWidgets):
+    """ 多窗口控件 """
+    def __init__(self, fig, data, parent=None):
+        """ 多窗口联动控件。
+
+        Args:
+            fig (Figure): matplotlib绘图容器。
+            data (DataFrame): [open, close, high, low]数据表。
+        """
+        MultiWidgets.__init__(self, fig, plt, len(data), 0, "TechnicalWidget")
+        self._cursor = None
+        self._cursor_axes_index = { }
+        self._hoffset = 1
+        self._slider_height = 0.1
+        self._bigger_picture_height = 0.3    # 鸟瞰图高度
+        self._all_axes = []
+        self._cursor_axes = { }
+        self.load_data(data)
+        self.connect_event_handlers()
+
+    def load_data(self, data):
+        self._data = data
+        self._data_length = len(self._data)
+
+    @property
+    def axes(self):
+        return self._all_axes
+
+    def plot_text(self, name, ith_ax, x, y, text, color='black', size=10, rotation=0):
+        self.axes[ith_ax].text(x, y, text, color=color, fontsize=size, rotation=rotation)
+
+    def _init_subwidges_window_position(self):
+        self.window_left = self._data_length - self.window_size
+        for subwidget in six.itervalues(self._child_widgets):
+            subwidget.set_window_interval(self.window_left, self.window_right)
 
     def on_slider(self, event):
         """ 滑块事件处理。 """
@@ -113,31 +137,31 @@ class TechnicalWidget(BaseFigureWidget):
 
     def draw_widgets(self):
         """ 显示控件 """
-        self._draw_bigger_picture()
-        self._cursor = MultiCursor(self._fig.canvas,
-                                    list(self._cursor_axes.values()),
-                                    color='r', lw=2, horizOn=True,
-                                    vertOn=True)
-        self._init_subwidges_window_position()
-        self._fig.canvas.draw()
+        return
+        # self._draw_bigger_picture()
+        # self._cursor = MultiCursor(self._fig.canvas,
+        #                             list(self._cursor_axes.values()),
+        #                             color='r', lw=2, horizOn=True,
+        #                             vertOn=True)
+        # self._init_subwidges_window_position()
+        # self._fig.canvas.draw()
 
     def _draw_bigger_picture(self):
         self._bigger_picture_plot = self._bigger_picture.plot(self._data['close'].values, 'b')
         self._bigger_picture.set_ylim((min(self._data['low']), max(self._data['high'])))
         self._bigger_picture.set_xlim((0, len(self._data['close'])))
 
-    def init_layout(self, w_width, *args):
+    def init_layout(self, w_width):
         # 布局参数
         self.window_size = w_width
         self.window_left = self._data_length - self.window_size
         print("window_left: %s" % (self.window_left))
         print("window_size: %s" % (self._data_length))
 
-        self.add_slider_bigger_picture();
-        self.add_user_axes(*args)
-
-        return self.axes
-
+        self._all_axes.append(plt.subplot2grid((30, 1), (0, 0), rowspan=15))
+        self._all_axes.append(plt.subplot2grid((30, 1), (15, 0), rowspan=10))
+        self._all_axes.append(plt.subplot2grid((30, 1), (25, 0), rowspan=5))
+        return self._all_axes
 
     def add_slider_bigger_picture(self):
         self._slidder_lower = self._bottom
@@ -153,12 +177,11 @@ class TechnicalWidget(BaseFigureWidget):
         self._bigger_picture.set_xticklabels([]);
         self._bigger_picture.set_xticks([])
         self._bigger_picture.set_yticks([])
-        self._slider_ax.xaxis.set_major_formatter(TimeFormatter(self._data.index, fmt='%Y-%m-%d'))
         self._all_axes = [self._slider_ax, self._bigger_picture]
 
-        self._slider = Slider(self._fig, self._slider_ax, "slider", self._data_length, self._window_size, self, '', 0, self._data_length-1,
-                                    self._data_length-1, self._data_length/50, "%d",
-                                    self._data.index)
+        # self._slider = Slider(self._fig, self._slider_ax, "slider", self._data_length, self._window_size, self, '', 0, self._data_length-1,
+        #                             self._data_length-1, self._data_length/50, "%d",
+        #                             self._data.index)
 
 
     def add_user_axes(self, *args):
@@ -258,3 +281,8 @@ class TimeFormatter(Formatter):
         else:
             # 日内其它分钟
             return '%m-%d'
+
+
+
+if __name__ ==  "__main__":
+    print("ok")

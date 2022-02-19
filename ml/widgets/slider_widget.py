@@ -1,7 +1,7 @@
 '''
 Author: your name
 Date: 2022-02-12 08:08:34
-LastEditTime: 2022-02-19 14:24:43
+LastEditTime: 2022-02-19 16:12:11
 LastEditors: Please set LastEditors
 Description: 打开koroFileHeader查看配置 进行设置: https://github.com/OBKoro1/koro1FileHeader/wiki/%E9%85%8D%E7%BD%AE
 FilePath: /machine-learning/ml/widgets/slider_widget.py
@@ -58,7 +58,7 @@ class Slider(BaseAxesWidget):
     Call :meth:`add_observer` to connect to the slider event
     """
 
-    def __init__(self, fig, ax, name, widget_size, window_size, parent, label, valmin, valmax, valinit=0.5, width=1, valfmt='%1.2f',
+    def __init__(self, ax, name, widget_size, window_size, parent, label, valmin, valmax, valinit=0.5, width=1, valfmt='%1.2f',
                  time_index = None, closedmin=True, closedmax=True, slidermin=None,
                  slidermax=None, drag_enabled=True, **kwargs):
         """

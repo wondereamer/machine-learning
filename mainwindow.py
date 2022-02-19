@@ -6,7 +6,8 @@ matplotlib.use('TkAgg')
 import matplotlib.pyplot as plt
 from matplotlib.ticker import Formatter
 from ml.widgets import mplots
-from ml.widgets.technical_widget import TechnicalWidget
+from ml.widgets.technical_widget import TechnicalWidget, MultiWidgets
+from ml.widgets.slider_widget import Slider, slider_strtime_format
 from ml.widgets.frame_widget import FrameWidget
 from ml.widgets.plotter import Line, LineWithX, Volume
 import pandas as pd
@@ -33,7 +34,6 @@ def plot_strategy(price_data, technicals={}, deals=[], curve=[], marks=[]):
     frame = TechnicalWidget(fig, price_data)
     axes = frame.init_layout(
         min(10, len(price_data)),         # 窗口显示k线数量。
-         4, 1     # 两个4:1大小的窗口
     )
 
     # 绘制第一个窗口
@@ -45,65 +45,74 @@ def plot_strategy(price_data, technicals={}, deals=[], curve=[], marks=[]):
     # line.visible_switch = True
     line.zorder_switch = True
     subwidget1.add_plotter(line, False)
-    # 交易信号。
-    if deals:
-        signal = mplots.TradingSignalPos(price_data, deals, lw=2)
-        subwidget1.add_plotter(signal, False)
-    if len(curve) > 0:
-        curve = Line(curve)
-        subwidget1.add_plotter(curve, True)
-    # 添加指标
-    for name, indic in six.iteritems(technicals):
-        subwidget1.add_plotter(indic, False)
+
+    widget_size = len(price_data)
+    slider = Slider(axes[2], "slider", widget_size, 10, frame, '', 0, widget_size-1,
+                                widget_size-1, widget_size/50, "%d", price_data.index)
+
+    slider.ax.xaxis.set_major_formatter(TimeFormatter(price_data.index, fmt='%Y-%m-%d'))
+
 
     # 绘制第2个窗口
     subwidget2 = FrameWidget(axes[1], "subwidget2", len(price_data), 50)
     volume_plotter = Volume(price_data.open, price_data.close, price_data.volume)
     subwidget2.add_plotter(volume_plotter, False)
 
-    subwidgets = [subwidget1, subwidget2]
-
-    ### 绘制标志
-    if marks:
-        if marks[0]:
-            # plot lines
-            for name, values in six.iteritems(marks[0]):
-                v = values[0]
-                ith_ax = v[0]
-                twinx = v[1]
-                line_pieces = [[v[2]], [v[3]], v[4], v[5], v[6]]
-                line = []
-                for v in values[1: ]:
-                    ## @TODO 如果是带“点”的，以点的特征聚类，会减少绘图对象的数目
-                    x, y, style, lw, ms = v[2], v[3], v[4], v[5], v[6]
-                    if style != line_pieces[2] or lw != line_pieces[3] or ms != line_pieces[4]:
-                        line.append(line_pieces)
-                        line_pieces = [[x], [y], style, lw, ms]
-                    else:
-                        line_pieces[0].append(x)
-                        line_pieces[1].append(y)
-                line.append(line_pieces)
-                for v in line:
-                    ## @TODO 这里的sytle明确指出有点奇怪，不一致。
-                    x, y, style, lw, marksize = v[0], v[1], v[2], v[3], v[4]
-                    curve = LineWithX(x, y, style=style, lw=lw, ms=marksize)
-                    subwidgets[ith_ax].add_plotter(curve, twinx)
-        if marks[1]:
-            # plot texts
-            for name, values in six.iteritems(marks[1]):
-                for v in values:
-                    ith_ax, x, y, text = v[0], v[1], v[2], v[3]
-                    color, size, rotation = v[4], v[5], v[6]
-                    ## @TODO move to text plotter
-                    frame.plot_text(name, ith_ax, x, y, text, color, size, rotation)
-
     frame.add_widget(0, subwidget1)
     frame.add_widget(1, subwidget2)
-    frame._slider.add_observer(subwidget1.on_slider)
-    frame._slider.add_observer(subwidget2.on_slider)
-    frame._slider.add_observer(frame.on_slider)
-    frame.draw_widgets()
-    plt.show()
+    slider.add_observer(subwidget1.on_slider)
+    slider.add_observer(frame.on_slider)
+
+    # subwidgets = [subwidget1, subwidget2]
+    # # 交易信号。
+    # if deals:
+    #     signal = mplots.TradingSignalPos(price_data, deals, lw=2)
+    #     subwidget1.add_plotter(signal, False)
+    # if len(curve) > 0:
+    #     curve = Line(curve)
+    #     subwidget1.add_plotter(curve, True)
+    # # 添加指标
+    # for name, indic in six.iteritems(technicals):
+    #     subwidget1.add_plotter(indic, False)
+
+    # ### 绘制标志
+    # if marks:
+    #     if marks[0]:
+    #         # plot lines
+    #         for name, values in six.iteritems(marks[0]):
+    #             v = values[0]
+    #             ith_ax = v[0]
+    #             twinx = v[1]
+    #             line_pieces = [[v[2]], [v[3]], v[4], v[5], v[6]]
+    #             line = []
+    #             for v in values[1: ]:
+    #                 ## @TODO 如果是带“点”的，以点的特征聚类，会减少绘图对象的数目
+    #                 x, y, style, lw, ms = v[2], v[3], v[4], v[5], v[6]
+    #                 if style != line_pieces[2] or lw != line_pieces[3] or ms != line_pieces[4]:
+    #                     line.append(line_pieces)
+    #                     line_pieces = [[x], [y], style, lw, ms]
+    #                 else:
+    #                     line_pieces[0].append(x)
+    #                     line_pieces[1].append(y)
+    #             line.append(line_pieces)
+    #             for v in line:
+    #                 ## @TODO 这里的sytle明确指出有点奇怪，不一致。
+    #                 x, y, style, lw, marksize = v[0], v[1], v[2], v[3], v[4]
+    #                 curve = LineWithX(x, y, style=style, lw=lw, ms=marksize)
+    #                 subwidgets[ith_ax].add_plotter(curve, twinx)
+    #     if marks[1]:
+    #         # plot texts
+    #         for name, values in six.iteritems(marks[1]):
+    #             for v in values:
+    #                 ith_ax, x, y, text = v[0], v[1], v[2], v[3]
+    #                 color, size, rotation = v[4], v[5], v[6]
+    #                 ## @TODO move to text plotter
+    #                 frame.plot_text(name, ith_ax, x, y, text, color, size, rotation)
+
+    # frame._slider.add_observer(subwidget2.on_slider)
+    # frame._slider.add_observer(frame.on_slider)
+    # frame.draw_widgets()
+    frame.show()
 
 
 def plot_curves(data, colors=[], lws =[], names=[]):
@@ -170,3 +179,15 @@ class TimeFormatter(Formatter):
 
 price_data = pd.read_csv("./test.csv", index_col=0, parse_dates=True)
 plot_strategy(price_data);
+
+
+def demo1():
+    fig = plt.figure()
+    axes = []
+    axes.append(plt.subplot2grid((30, 1), (0, 0), rowspan=15))
+    axes.append(plt.subplot2grid((30, 1), (15, 0), rowspan=10))
+    axes.append(plt.subplot2grid((30, 1), (25, 0), rowspan=5))
+    widget = MultiWidgets(fig, plt, axes, "test", [1,2,3,4])
+    widget.tight_layout()
+    widget.show()
+    # widget.show()
