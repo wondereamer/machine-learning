@@ -97,8 +97,11 @@ def plot_strategy(price_data, technicals={}, deals=[], curve=[], marks=[]):
                     ## @TODO move to text plotter
                     frame.plot_text(name, ith_ax, x, y, text, color, size, rotation)
 
-    frame.add_widget(0, subwidget1, True, True)
-    frame.add_widget(1, subwidget2, True, True)
+    frame.add_widget(0, subwidget1)
+    frame.add_widget(1, subwidget2)
+    frame._slider.add_observer(subwidget1.on_slider)
+    frame._slider.add_observer(subwidget2.on_slider)
+    frame._slider.add_observer(frame.on_slider)
     frame.draw_widgets()
     plt.show()
 

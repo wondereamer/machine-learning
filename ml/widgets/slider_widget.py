@@ -1,7 +1,7 @@
 '''
 Author: your name
 Date: 2022-02-12 08:08:34
-LastEditTime: 2022-02-15 13:34:38
+LastEditTime: 2022-02-19 10:15:16
 LastEditors: Please set LastEditors
 Description: 打开koroFileHeader查看配置 进行设置: https://github.com/OBKoro1/koro1FileHeader/wiki/%E9%85%8D%E7%BD%AE
 FilePath: /machine-learning/ml/widgets/slider_widget.py
@@ -58,7 +58,7 @@ class Slider(BaseAxesWidget):
     Call :meth:`add_observer` to connect to the slider event
     """
 
-    def __init__(self, fig, ax, name, parent, label, valmin, valmax, valinit=0.5, width=1, valfmt='%1.2f',
+    def __init__(self, fig, ax, name, widget_size, window_size, parent, label, valmin, valmax, valinit=0.5, width=1, valfmt='%1.2f',
                  time_index = None, closedmin=True, closedmax=True, slidermin=None,
                  slidermax=None, drag_enabled=True, **kwargs):
         """
@@ -85,7 +85,7 @@ class Slider(BaseAxesWidget):
         knob.  See the :class:`matplotlib.patches.Rectangle` documentation
         valid property names (e.g., *facecolor*, *edgecolor*, *alpha*, ...)
         """
-        BaseAxesWidget.__init__(self, ax, name, parent)
+        BaseAxesWidget.__init__(self, ax, name, widget_size, window_size, parent)
         self.label = ax.text(-0.02, 0.5, label, transform=ax.transAxes,
                              verticalalignment='center',
                              horizontalalignment='right')
@@ -100,7 +100,7 @@ class Slider(BaseAxesWidget):
         self.slidermax = slidermax
         self.drag_active = False
         self.drag_enabled = drag_enabled
-        self.observers = {}
+        self.moved_handlers = []
         ax.set_yticks([])
         self.connect_event_handlers()
 
@@ -154,21 +154,18 @@ class Slider(BaseAxesWidget):
                                verticalalignment='center',
                                horizontalalignment='left')
 
-    def add_observer(self, obj):
+    def add_observer(self, handler):
         """
         When the slider value is changed, call *func* with the new
         slider position
 
         A connection id is returned which can be used to disconnect
         """
-        self.observers[obj.name] = obj
+        self.moved_handlers.append(handler)
 
     def remove_observer(self, cid):
         """remove the observer with connection id *cid*"""
-        try:
-            del self.observers[cid]
-        except KeyError:
-            pass
+        self.moved_handlers.remove(cid)
 
     def reset(self):
         """reset the slider to the initial value if needed"""
@@ -181,7 +178,7 @@ class Slider(BaseAxesWidget):
         if event.button != 1 or not self.drag_active:
             return
         self._update(event.xdata)
-        setattr(event, "update_observer", True)
+        setattr(event, "position", self.val)
         self._update_observer(event)
 
     def on_button_release(self, event):
@@ -190,11 +187,10 @@ class Slider(BaseAxesWidget):
         if  event.inaxes == self.ax:
             self.drag_active = False
             event.canvas.release_mouse(self.ax)
+            setattr(event, "position", self.val)
             self._update_observer(event)
 
     def on_button_press(self, event):
-        print(self.name + ".get.." + event.source)
-        print(event.inaxes == self.ax)
         if event.button != 1:
             return
         if event.inaxes == self.ax:
@@ -244,8 +240,5 @@ class Slider(BaseAxesWidget):
 
     def _update_observer(self, event):
         """ 通知相关窗口更新数据 """
-        for name, obj in six.iteritems(self.observers):
-            try:
-                obj.on_slider(self.val, event)
-            except Exception as e:
-                six.print_(e)
+        for handler in self.moved_handlers:
+            handler(event)

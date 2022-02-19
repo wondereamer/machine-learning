@@ -33,7 +33,7 @@ class TechnicalWidget(BaseFigureWidget):
             fig (Figure): matplotlib绘图容器。
             data (DataFrame): [open, close, high, low]数据表。
         """
-        BaseFigureWidget.__init__(self, fig, "TechnicalWidget")
+        BaseFigureWidget.__init__(self, fig, len(data), 0, "TechnicalWidget")
         self._cursor = None
         self._cursor_axes_index = { }
         self._hoffset = 1
@@ -73,9 +73,20 @@ class TechnicalWidget(BaseFigureWidget):
                                     list(self._cursor_axes.values()),
                                     color='r', lw=2, horizOn=True,
                                     vertOn=True)
-        self._update_widgets()
+        self.axes[0].set_xlim((int(self._window_left), int(self._window_right)))
+        for subwidget in six.itervalues(self._child_widgets):
+            subwidget.update_window_interval(self._window_left, self._window_right)
+        self._fig.canvas.draw()
 
-    def add_widget(self, ith_subwidget, widget, ymain=False, connect_slider=False):
+    def _update_widgets(self):
+        """ 改变可视区域， 在坐标移动后被调用。"""
+        self.axes[0].set_xlim((int(self._window_left), int(self._window_right)))
+        # for subwidget in six.itervalues(self._child_widgets):
+        #     subwidget.set_ylim(self._window_left, self._window_right)
+        self._fig.canvas.draw()
+
+
+    def add_widget(self, ith_subwidget, widget):
         """ 添加一个能接收消息事件的控件。
 
         Args:
@@ -93,12 +104,11 @@ class TechnicalWidget(BaseFigureWidget):
                 self.axes.append(plotter.ax)
         self._child_widgets[ith_subwidget] = widget
         widget.parent = self
-        if connect_slider:
-            self._slider.add_observer(widget)
         return widget
 
-    def on_slider(self, val, event):
+    def on_slider(self, event):
         """ 滑块事件处理。 """
+        val = event.position
         def update_window():
             self._window_left = int(val)
             self._window_right = self._window_left+self._w_width
@@ -122,7 +132,13 @@ class TechnicalWidget(BaseFigureWidget):
         elif event.name == "motion_notify_event":
             pass
         update_window()
-        self._update_widgets()
+        self.axes[0].set_xlim((int(self._window_left), int(self._window_right)))
+        self._fig.canvas.draw()
+
+    def update_subwidges_window(self):
+        print(self._window_right - self._window_left)
+        for subwidget in six.itervalues(self._child_widgets):
+            subwidget.update_window_interval(self._window_left, self._window_right)
 
     def on_key_release(self, event):
         def update_window():
@@ -136,17 +152,19 @@ class TechnicalWidget(BaseFigureWidget):
             self._w_width += self._w_width/2
             self._w_width = min(self._data_length, self._w_width)
             update_window()
-            self._update_widgets()
+            self.update_subwidges_window()
+            self._fig.canvas.draw()
+
         elif event.key == u"up" :
             self._w_width -= self._w_width/2
             self._w_width= max(self._w_width, self._w_width_min)
-            update_window()
-            self._update_widgets()
-        elif event.key == u"super+up":
-            six.print_(event.key, "**", type(event.key) )
-        elif event.key == u"super+down":
-            six.print_(event.key, "**", type(event.key) )
-            # @TODO page upper down
+            self.update_subwidges_window()
+            self._fig.canvas.draw()
+        # elif event.key == u"super+up":
+        #     six.print_(event.key, "**", type(event.key) )
+        # elif event.key == u"super+down":
+        #     six.print_(event.key, "**", type(event.key) )
+        #     # @TODO page upper down
 
     def on_leave_axes(self, event):
         event.canvas.draw()
@@ -171,10 +189,9 @@ class TechnicalWidget(BaseFigureWidget):
         self._slider = None
         self._bigger_picture_plot = None
 
-        self._slider = Slider(self._fig, self._slider_ax, "slider", self, '', 0, self._data_length-1,
+        self._slider = Slider(self._fig, self._slider_ax, "slider", self._data_length, self._window_size, self, '', 0, self._data_length-1,
                                     self._data_length-1, self._data_length/50, "%d",
                                     self._data.index)
-        self._slider.add_observer(self)
 
         args = list(reversed(args))
         # 默认子窗口数量为1
@@ -213,13 +230,6 @@ class TechnicalWidget(BaseFigureWidget):
         for i in range(0, len(self.axes)):
             self._cursor_axes_index[i] = i
 
-
-    def _update_widgets(self):
-        """ 改变可视区域， 在坐标移动后被调用。"""
-        self.axes[0].set_xlim((int(self._window_left), int(self._window_right)))
-        for subwidget in six.itervalues(self._child_widgets):
-            subwidget.set_ylim(self._window_left, self._window_right)
-        self._fig.canvas.draw()
 
     def _set_ylim(self, w_left, w_right):
         """ 设置当前显示窗口的y轴范围。
@@ -262,23 +272,23 @@ class TechnicalWidget(BaseFigureWidget):
                 xticks.append(0)
         return xticks
 
-    def dispatch_event(self, event, set_source=True):
-        if (hasattr(event, "source") and event.source == self.name):
-            # ingore event emitted by self
-            return
+    # def dispatch_event(self, event, set_source=True):
+    #     if (hasattr(event, "source") and event.source == self.name):
+    #         # ingore event emitted by self
+    #         return
 
-        if (set_source):
-            setattr(event, "source", self.name)
+    #     if (set_source):
+    #         setattr(event, "source", self.name)
 
-        self.handle_event(event)
+    #     self.handle_event(event)
 
-        if self.parent is not None:
-            self.parent.dispatch_event(event, False)
+    #     if self.parent is not None:
+    #         self.parent.dispatch_event(event, False)
 
-        self._slider.dispatch_event(event, False)
+    #     self._slider.dispatch_event(event, False)
 
-        for widget in self._child_widgets.values():
-            widget.dispatch_event(event, False)
+    #     for widget in self._child_widgets.values():
+    #         widget.dispatch_event(event, False)
 
 
 class TimeFormatter(Formatter):

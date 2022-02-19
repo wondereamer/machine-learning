@@ -1,7 +1,7 @@
 '''
 Author: your name
 Date: 2022-02-12 08:05:30
-LastEditTime: 2022-02-15 13:33:58
+LastEditTime: 2022-02-19 11:06:31
 LastEditors: Please set LastEditors
 Description: 打开koroFileHeader查看配置 进行设置: https://github.com/OBKoro1/koro1FileHeader/wiki/%E9%85%8D%E7%BD%AE
 FilePath: /machine-learning/ml/widgets/fame_widgets.py
@@ -16,10 +16,8 @@ class FrameWidget(BaseAxesWidget):
     蜡烛线控件。
 
     """
-    def __init__(self, ax, name, wdlength, min_wdlength):
-        BaseAxesWidget.__init__(self, ax, name, None)
-        self.wdlength = wdlength
-        self.min_wdlength = min_wdlength
+    def __init__(self, ax, name, widget_size, window_size):
+        BaseAxesWidget.__init__(self, ax, name, widget_size, window_size, None)
         self.voffset = 0
         self.plotters = { }
         self.ax = ax
@@ -44,9 +42,11 @@ class FrameWidget(BaseAxesWidget):
             plotter.twinx = False
         self.plotters[plotter.name] = plotter
 
-    def set_ylim(self, w_left, w_right):
+    def update_window_interval(self, w_left, w_right):
         all_ymax = []
         all_ymin = []
+        w_left = int(w_left)
+        w_right = int(w_right)
         for plotter in six.itervalues(self.plotters):
             if plotter.twinx:
                 continue
@@ -60,13 +60,17 @@ class FrameWidget(BaseAxesWidget):
         ymax += self._voffset
         ymin -= self._voffset
         self.ax.set_ylim((ymin, ymax))
+        self.ax.set_xlim(w_left, w_right)
 
-    def on_slider(self, val, event):
+    def update_window(self, position):
+        self.update_window_position(position)
+        self.update_window_interval(self.window_left, self.window_right)
+
+    def on_slider(self, event):
         ## @TODO _set_ylim 分解到这里
-        pass
+        self.update_window(event.position)
 
     def on_button_press(self, event):
-        print(self.name + " from " + event.source)
-        print(event.inaxes == self.ax)
         # TODO  parent -> slider -> parent -> self
         # TODO  parent -> subwidget     source:parent
+        pass
