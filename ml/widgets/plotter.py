@@ -218,9 +218,12 @@ class Line(Plotter):
     def __init__(self, ydata, name='Line', style='black', lw=1):
         super(Line, self).__init__(name, None)
         self.values = ydata
+        self.custom_plot = None
 
     def plot(self, widget):
         self.widget = widget
+        if self.custom_plot is not None:
+            return self.custom_plot
         return self.plot_line(self.values, self.style, lw=self.lw)
 
 
