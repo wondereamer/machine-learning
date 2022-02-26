@@ -1,3 +1,11 @@
+'''
+Author: your name
+Date: 2022-02-19 10:04:35
+LastEditTime: 2022-02-26 19:17:42
+LastEditors: your name
+Description: 打开koroFileHeader查看配置 进行设置: https://github.com/OBKoro1/koro1FileHeader/wiki/%E9%85%8D%E7%BD%AE
+FilePath: /machine-learning/ml/widgets/mplots.py
+'''
 # -*- coding: utf-8 -*-
 
 import six
@@ -32,111 +40,6 @@ def override_attributes(method):
     return wrapper
 
 
-class Candles(object):
-    """
-    画蜡烛线。
-    """
-    def __init__(self, data, name='candle',
-                 width=0.6, colorup='r', colordown='g',
-                 lc='k', alpha=1):
-        """ Represent the open, close as a bar line and high low range as a
-        vertical line.
-
-
-        ax          : an Axes instance to plot to
-
-        width       : the bar width in points
-
-        colorup     : the color of the lines where close >= open
-
-        colordown   : the color of the lines where close <  open
-
-        alpha       : bar transparency
-
-        return value is lineCollection, barCollection
-        """
-        self.data = data
-        self.name = name
-        self.width = width
-        self.colorup = colorup
-        self.colordown = colordown
-        self.lc = lc
-        self.alpha = alpha
-        self.lineCollection = []
-        self.barCollection = []
-
-    # note this code assumes if any value open, close, low, high is
-    # missing they all are missing
-    @override_attributes
-    def plot(self, widget, data, width=0.6,
-             colorup='r', colordown='g', lc='k', alpha=1):
-
-        if self.lineCollection:
-            self.lineCollection.remove()
-        if self.barCollection:
-            self.barCollection.remove()
-
-        self.set_yrange(data.low.values, data.high.values)
-        self.data = data
-        """docstring for plot"""
-        delta = self.width / 2.
-        barVerts = [((i - delta, open),
-                     (i - delta, close),
-                     (i + delta, close),
-                     (i + delta, open))
-                    for i, open, close in zip(range(len(self.data)),
-                                              self.data.open,
-                                              self.data.close)
-                    if open != -1 and close != -1]
-        rangeSegments = [((i, low), (i, high))
-                         for i, low, high in zip(range(len(self.data)),
-                                                 self.data.low,
-                                                 self.data.high)
-                         if low != -1]
-        r, g, b = colorConverter.to_rgb(self.colorup)
-        colorup = r, g, b, self.alpha
-        r, g, b = colorConverter.to_rgb(self.colordown)
-        colordown = r, g, b, self.alpha
-        colord = {
-            True: colorup,
-            False: colordown,
-        }
-        colors = [colord[open < close]
-                  for open, close in zip(self.data.open, self.data.close)
-                  if open != -1 and close != -1]
-        assert(len(barVerts) == len(rangeSegments))
-        useAA = 0,  # use tuple here
-        lw = 0.5,   # and here
-        r, g, b = colorConverter.to_rgb(self.lc)
-        linecolor = r, g, b, self.alpha
-        self.lineCollection = LineCollection(rangeSegments,
-                                             colors=(linecolor,),
-                                             linewidths=lw,
-                                             antialiaseds=useAA,
-                                             zorder=0)
-
-        self.barCollection = PolyCollection(barVerts,
-                                            facecolors=colors,
-                                            edgecolors=colors,
-                                            antialiaseds=useAA,
-                                            linewidths=lw,
-                                            zorder=1)
-        widget.autoscale_view()
-        # add these last
-        widget.add_collection(self.barCollection)
-        widget.add_collection(self.lineCollection)
-        return self.lineCollection, self.barCollection
-
-    def set_yrange(self, lower, upper=[]):
-        self.upper = upper if len(upper) > 0 else lower
-        self.lower = lower
-
-    def y_interval(self, w_left, w_right):
-        if len(self.upper) == 2:
-            return max(self.upper), min(self.lower)
-        ymax = np.max(self.upper[w_left: w_right])
-        ymin = np.min(self.lower[w_left: w_right])
-        return ymax, ymin
 
 
 class TradingSignal(object):

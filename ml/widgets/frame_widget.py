@@ -1,19 +1,19 @@
 '''
 Author: your name
 Date: 2022-02-12 08:05:30
-LastEditTime: 2022-02-26 09:35:00
+LastEditTime: 2022-02-26 19:46:00
 LastEditors: Please set LastEditors
 Description: 打开koroFileHeader查看配置 进行设置: https://github.com/OBKoro1/koro1FileHeader/wiki/%E9%85%8D%E7%BD%AE
 FilePath: /machine-learning/ml/widgets/fame_widgets.py
 '''
 from lib2to3.pytree import Base
-import six
 import matplotlib.pyplot as plt
 from matplotlib.widgets import MultiCursor
-from .mplots import Candles
+from .plotter import Candles
 from .base_widget import BaseAxesWidget
 from .formater import TimeFormatter
 from .slider_widget import slider_strtime_format
+from .events import MouseMotionEvent, ButtonPressEvent
 
 class AxesWidget(BaseAxesWidget):
     """
@@ -50,6 +50,12 @@ class AxesWidget(BaseAxesWidget):
         plt.show()
 
 
+#  widget -- axes  --- n plotters
+#   widget计算所有的 plotters的y_max, y_min, 然后再调整axes, 这里有重复计算的问题。
+#  widget.events --> plotter.events
+#  twinx plotters --> 计算窗口
+
+
 class SliderAxesWidget(AxesWidget):
     """ 带滑动事件响应支持的AxesWidget
 
@@ -61,24 +67,24 @@ class SliderAxesWidget(AxesWidget):
         AxesWidget.__init__(self, ax, name, widget_size, window_size, parent)
 
     def on_slider(self, event):
-        self._update_window(event.position)
+        for plotter in self.plotters.values():
+            plotter.on_slider(event)
+        if event.name in [ MouseMotionEvent, ButtonPressEvent ]:
+            self._update_window(event.position)
 
     def set_window_interval(self, w_left, w_right):
         all_ymax = []
         all_ymin = []
         w_left = int(w_left)
         w_right = int(w_right)
-        for plotter in six.itervalues(self.plotters):
-            # TODO what?
-            # if plotter.twinx:
-            #     continue
+        for plotter in self.plotters.values():
             assert w_right > w_left
             ymax, ymin = plotter.y_interval(w_left, w_right)
             ## @todo move ymax, ymin 计算到plot中去。
             all_ymax.append(ymax)
             all_ymin.append(ymin)
         if len(self.plotters) == 0:
-            print("warning: 没有绘图")
+            print("[SliderAxesWidget] warning: %s 没有绘图" % self.name)
             return
         ymax = max(all_ymax)
         ymin = min(all_ymin)

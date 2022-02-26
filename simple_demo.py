@@ -1,7 +1,7 @@
 '''
 Author: your name
 Date: 2022-02-19 20:32:30
-LastEditTime: 2022-02-26 09:35:29
+LastEditTime: 2022-02-26 19:16:55
 LastEditors: Please set LastEditors
 Description: 打开koroFileHeader查看配置 进行设置: https://github.com/OBKoro1/koro1FileHeader/wiki/%E9%85%8D%E7%BD%AE
 FilePath: /machine-learning/ml/simple_demo.py
@@ -16,7 +16,7 @@ from ml.widgets import mplots
 from ml.widgets.technical_widget import TechnicalFrame, MultiWidgetsFrame
 from ml.widgets.slider_widget import Slider, slider_strtime_format
 from ml.widgets.frame_widget import AxesWidget, SliderAxesWidget, CandleWidget
-from ml.widgets.plotter import Line, LineWithX, Volume
+from ml.widgets.plotter import SliderPlotter, Volume
 import pandas as pd
 
 
@@ -54,7 +54,27 @@ def axes_widget_demo():
     widget.show()
 
 
-def slider_widget_demo():
+def slider_simple_demo():
+    fig = plt.figure()
+    axes = []
+    axes.append(plt.subplot2grid((5, 1), (0, 0), rowspan=4))
+    axes.append(plt.subplot2grid((5, 1), (4, 0)))
+    widget_size = len(price_data)
+    window_size = 50
+    # 创建子窗口 
+    widget = SliderAxesWidget(axes[0], "subwidget2", widget_size, window_size)
+    # 画线
+    line = SliderPlotter(axes[0], "slider_plotter", price_data.close.values, price_data.close.values)
+    line.ax.plot(price_data.close.values)
+    widget.add_plotter(line , False)
+    # 创建主窗口
+    mainwindow = MultiWidgetsFrame(fig, "multi", widget_size, window_size)
+    mainwindow.create_slider(axes[1], price_data.index)
+    mainwindow.add_widget(widget)
+    mainwindow.show()
+
+
+def candle_widget_demo():
     fig = plt.figure()
     axes = []
     axes.append(plt.subplot2grid((5, 1), (0, 0), rowspan=4))
@@ -112,5 +132,6 @@ def technical_widget_demo():
 
 
 #axes_widget_demo()
-#slider_widget_demo()
+#candle_widget_demo()
+#slider_simple_demo()
 technical_widget_demo()
