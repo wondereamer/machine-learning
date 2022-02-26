@@ -1,7 +1,7 @@
 '''
 Author: your name
 Date: 2022-02-19 10:04:35
-LastEditTime: 2022-02-26 19:39:48
+LastEditTime: 2022-02-27 00:58:57
 LastEditors: Please set LastEditors
 Description: 打开koroFileHeader查看配置 进行设置: https://github.com/OBKoro1/koro1FileHeader/wiki/%E9%85%8D%E7%BD%AE
 FilePath: /machine-learning/ml/widgets/plotter.py
@@ -175,3 +175,18 @@ class Candles(SliderPlotter):
             self.set_visible(False)
         elif event.name == events.ButtonReleaseEvent:
             self.set_visible(True)
+
+class TradingSignal(object):
+    """ 从信号坐标(时间， 价格)中绘制交易信号。 """
+    def __init__(self, signal, name="Signal", c=None, lw=2):
+        self.signal = signal
+        self.name = name
+
+    def plot(self, widget, c="red", lw=2):
+        useAA = 0,  # use tuple here
+        signal = LineCollection(self.signal, colors=c, linewidths=lw,
+                                antialiaseds=useAA)
+        widget.add_collection(signal)
+
+    def y_interval(self, w_left, w_right):
+        return 0, 100000000

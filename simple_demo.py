@@ -1,7 +1,7 @@
 '''
 Author: your name
 Date: 2022-02-19 20:32:30
-LastEditTime: 2022-02-26 19:16:55
+LastEditTime: 2022-02-27 00:57:42
 LastEditors: Please set LastEditors
 Description: 打开koroFileHeader查看配置 进行设置: https://github.com/OBKoro1/koro1FileHeader/wiki/%E9%85%8D%E7%BD%AE
 FilePath: /machine-learning/ml/simple_demo.py
@@ -21,6 +21,17 @@ import pandas as pd
 
 
 price_data = pd.read_csv("./test.csv", index_col=0, parse_dates=True)
+
+
+class Deal(object):
+    def __init__(self):
+        self.open_datetime = None
+        self.close_datetime = None
+        self.open_price = 0
+        self.close_price = 0
+
+    def profit(self):
+        return self.close_price - self.open_price
 
 class TimeFormatter(Formatter):
     # def __init__(self, dates, fmt='%Y-%m-%d'):
@@ -83,7 +94,8 @@ def candle_widget_demo():
     window_size = 50
 
     candle_widget = CandleWidget(price_data, axes[0], "test", widget_size, window_size)
-    candle_widget.plot_line(price_data.close.values)
+    candle_widget.plot_candle()
+
 
     mainwindow = MultiWidgetsFrame(fig, "multi", widget_size, window_size)
     mainwindow.create_slider(axes[1], price_data.index)
@@ -101,7 +113,6 @@ def candle_widget_demo():
 
     mainwindow.show()
 
-
 def technical_widget_demo():
     fig = plt.figure()
     window_size = 50
@@ -111,20 +122,36 @@ def technical_widget_demo():
     frame.load_data(price_data)
     axes = frame.init_layout()
 
-    subwidget1 = CandleWidget(price_data, axes[0], "subwidget1", widget_size, window_size)
-    subwidget2 = SliderAxesWidget(axes[1], "subwidget2", widget_size, window_size)
+    candle_widget = CandleWidget(price_data, axes[0], "candle_widget", widget_size, window_size)
+    volume_widget = SliderAxesWidget(axes[1], "subwidget2", widget_size, window_size)
 
     # 绘制第一个窗口
-    # line = Line(price_data.open.values)
-    # line.zorder_switch = True
-    # subwidget1.add_plotter(line, False)
-    subwidget1.plot_line(price_data.close.values)
+    # candle_widget.plot_line(price_data.close.values)
+    candle_widget.plot_candle()
+
+    deals = []
+    signals = []
+    open_time = price_data.index[-12]
+    for close_time in price_data.index[-10: -1]:
+        signals.append((close_time, price_data.close[close_time]))
+        deal = Deal()
+        deal.open_datetime = open_time
+        deal.close_datetime = close_time
+        deal.open_price = price_data.close[open_time]
+        deal.close_price = price_data.close[close_time]
+        deals.append(deal)
+    
+    candle_widget.plot_signals(deals, signals)
+
+
+
     # 绘制第2个窗口
     volume_plotter = Volume(price_data.open, price_data.close, price_data.volume)
-    subwidget2.add_plotter(volume_plotter, False)
+    volume_plotter.plot(axes[1])
+    volume_widget.add_plotter(volume_plotter, False)
 
-    frame.add_widget(subwidget1)
-    frame.add_widget(subwidget2)
+    frame.add_widget(candle_widget)
+    frame.add_widget(volume_widget)
 
 
 

@@ -1,13 +1,14 @@
 '''
 Author: your name
 Date: 2022-02-12 08:05:30
-LastEditTime: 2022-02-26 19:46:00
+LastEditTime: 2022-02-27 01:01:48
 LastEditors: Please set LastEditors
 Description: 打开koroFileHeader查看配置 进行设置: https://github.com/OBKoro1/koro1FileHeader/wiki/%E9%85%8D%E7%BD%AE
 FilePath: /machine-learning/ml/widgets/fame_widgets.py
 '''
 from lib2to3.pytree import Base
 import matplotlib.pyplot as plt
+from matplotlib.collections import LineCollection
 from matplotlib.widgets import MultiCursor
 from .plotter import Candles
 from .base_widget import BaseAxesWidget
@@ -22,23 +23,15 @@ class AxesWidget(BaseAxesWidget):
         BaseAxesWidget.__init__(self, ax, name, widget_size, window_size, parent)
         self.plotters = { }
         self.ax = ax
+        self.twinx_plotters = set()
 
     def add_plotter(self, plotter, twinx):
         """ 添加并绘制, 不允许重名的plotter """
         if plotter.name in self.plotters:
             raise
-        if not self.plotters:
-            twinx = False
-        if twinx:
-            twaxes = self.ax.twinx()
-            plotter.plot(twaxes)
-            plotter.ax = twaxes
-            plotter.twinx = True
-        else:
-            plotter.plot(self.ax)
-            plotter.ax = self.ax
-            plotter.twinx = False
         self.plotters[plotter.name] = plotter
+        if twinx:
+            self.twinx_plotters.add(plotter)
 
     def add_plot(self, plot, name):
         self.plotters[name] = plot
@@ -65,6 +58,8 @@ class SliderAxesWidget(AxesWidget):
 
     def __init__(self, ax, name, widget_size, window_size, parent=None):
         AxesWidget.__init__(self, ax, name, widget_size, window_size, parent)
+        self.window_left = widget_size - window_size
+        self.set_window_interval(self.window_left, widget_size)
 
     def on_slider(self, event):
         for plotter in self.plotters.values():
@@ -79,6 +74,9 @@ class SliderAxesWidget(AxesWidget):
         w_right = int(w_right)
         for plotter in self.plotters.values():
             assert w_right > w_left
+            if plotter in self.twinx_plotters:
+                print("set_window_interval ignore:" + plotter.name)
+                # continue
             ymax, ymin = plotter.y_interval(w_left, w_right)
             ## @todo move ymax, ymin 计算到plot中去。
             all_ymax.append(ymax)
@@ -153,18 +151,53 @@ class CandleWidget(SliderAxesWidget):
     def __init__(self, price_data, ax, name, widget_size, window_size, parent=None):
         SliderAxesWidget.__init__(self, ax, name, widget_size, window_size, parent)
         self._data = price_data
-        self._plot_candle()
 
-    def _plot_candle(self):
+    def plot_candle(self):
         candles = Candles(self._data, 'candles')
+        candles.plot(self.ax)
         self.add_plotter(candles, False)
+
         delta = (self._data.index[1] - self._data.index[0])
         self.ax.xaxis.set_major_formatter(TimeFormatter(self._data.index, delta))
         self.ax.set_xticks(self._xticks_to_display(0, len(self._data), delta));
         self.ax.format_coord = self._format_coord
 
     def plot_line(self, data):
-        self.ax.plot(data, "black", lw=2)
+        # 默认共用axes, 绕过了窗口设置
+        return self.ax.plot(data, "black", lw=2)
+
+    def plot_deals(self, deals):
+        pass
+
+    def plot_signals(self, deals, signals):
+        # signal_x = list(zip(*signals))[0]
+        # signal_y = list(zip(*signals))[1]
+        # return self.ax.scatter(signal_x, signal_y, c=[50] * len(signal_y), marker="o")
+        signal_x = []
+        signal_y = []
+
+        self.signal = []
+        self.colors = []
+        self._data['row'] = [i for i in range(0, len(self._data))]
+        for deal in deals:
+            # ((x0, y0), (x1, y1))
+            signal_x.append(self._data.row[deal.close_datetime])
+            signal_y.append(deal.close_price)
+
+            p = ((self._data.row[deal.open_datetime], deal.open_price),
+                 (self._data.row[deal.close_datetime], deal.close_price))
+            self.signal.append(p)
+            self.colors.append(
+                (1, 0, 0, 1) if deal.profit() > 0 else (0, 1, 0, 1))
+
+        print(signal_x)
+        print(signal_y)
+        return self.ax.scatter(signal_x, signal_y, c=[50] * len(signal_y), marker="o")
+
+        useAA = 0,  # use tuple here
+        signal = LineCollection(self.signal, colors=self.colors, linewidths=[1] * len(self.colors),
+                                antialiaseds=useAA)
+        return self.ax.add_collection(signal)
 
     def draw_widget(self):
         pass

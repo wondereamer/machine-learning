@@ -42,21 +42,6 @@ def override_attributes(method):
 
 
 
-class TradingSignal(object):
-    """ 从信号坐标(时间， 价格)中绘制交易信号。 """
-    def __init__(self, signal, name="Signal", c=None, lw=2):
-        self.signal = signal
-        self.name = name
-
-    def plot(self, widget, c=None, lw=2):
-        useAA = 0,  # use tuple here
-        signal = LineCollection(self.signal, colors=c, linewidths=lw,
-                                antialiaseds=useAA)
-        widget.add_collection(signal)
-
-    def y_interval(self, w_left, w_right):
-        return 0, 100000000
-
 
 class TradingSignalPos(object):
     """ 从价格和持仓数据中绘制交易信号图。 """
