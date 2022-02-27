@@ -1,7 +1,7 @@
 '''
 Author: your name
 Date: 2022-02-12 08:05:30
-LastEditTime: 2022-02-27 18:03:50
+LastEditTime: 2022-02-27 18:21:15
 LastEditors: Please set LastEditors
 Description: 打开koroFileHeader查看配置 进行设置: https://github.com/OBKoro1/koro1FileHeader/wiki/%E9%85%8D%E7%BD%AE
 FilePath: /machine-learning/ml/widgets/fame_widgets.py
@@ -76,14 +76,13 @@ class SliderAxesWidget(AxesWidget):
         for plotter in self.plotters.values():
             assert w_right > w_left
             if plotter in self.twinx_plotters:
-                wlog.info("set_window_interval ignore:" + plotter.name)
+                wlog.info("Inore intervals of window: " + plotter.name)
                 # continue
             ymax, ymin = plotter.y_interval(w_left, w_right)
             ## @todo move ymax, ymin 计算到plot中去。
             all_ymax.append(ymax)
             all_ymin.append(ymin)
         if len(self.plotters) == 0:
-            wlog.info("[SliderAxesWidget] warning: %s 没有绘图" % self.name)
             return
         ymax = max(all_ymax)
         ymin = min(all_ymin)
@@ -105,7 +104,8 @@ class SliderAxesWidget(AxesWidget):
             self.set_window_interval(self.window_left, self.window_right)
 
             middle = (self.window_left + self.window_right) / 2
-            print((self.window_left, middle, self.window_right, self.window_size))
+            wlog.debug("window: ")
+            wlog.debug((self.window_left, middle, self.window_right, self.window_size))
 
         elif event.key == u"up" :
             middle = (self.window_left + self.window_right) / 2
@@ -113,9 +113,9 @@ class SliderAxesWidget(AxesWidget):
             self.window_left =  max(1, int(middle - self.window_size/2))
             self.set_window_interval(self.window_left, self.window_right)
 
-            print("window: ")
+            wlog.debug("window: ")
             middle = (self.window_left + self.window_right) / 2
-            print((self.window_left, middle, self.window_right, self.window_size))
+            wlog.debug((self.window_left, middle, self.window_right, self.window_size))
 
 
 class BirdsEyeWidget(SliderAxesWidget):

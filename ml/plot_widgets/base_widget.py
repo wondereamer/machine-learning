@@ -1,7 +1,7 @@
 '''
 Author: your name
 Date: 2022-02-13 22:00:56
-LastEditTime: 2022-02-22 21:14:17
+LastEditTime: 2022-02-27 18:18:30
 LastEditors: Please set LastEditors
 Description: 打开koroFileHeader查看配置 进行设置: https://github.com/OBKoro1/koro1FileHeader/wiki/%E9%85%8D%E7%BD%AE
 FilePath: /machine-learning/ml/widgets/base_widget.py
@@ -10,6 +10,7 @@ FilePath: /machine-learning/ml/widgets/base_widget.py
 from matplotlib.axes import Axes
 from matplotlib.widgets import AxesWidget
 import matplotlib.pyplot as plt
+from ml.log import wlog
 
 
 class BaseWidgetMixin(object):
@@ -22,7 +23,7 @@ class BaseWidgetMixin(object):
         self._widget_size = widget_size
         self._child_widgets = []
         self.plot = plt
-        print("Create Window: {0}[widget size: {1}, window size: {2}]".format(
+        wlog.info("Create Window: {0}[widget size: {1}, window size: {2}]".format(
             self.name, self._widget_size, self._window_size))
 
     def _on_enter_axes(self, event):

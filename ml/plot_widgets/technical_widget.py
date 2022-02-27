@@ -12,6 +12,7 @@ from ml.plot_widgets.base_widget import BaseFigureFrame
 from ml.plot_widgets.frame_widget import SliderAxesWidget, BirdsEyeWidget
 from ml.plot_widgets.slider_widget import Slider, slider_strtime_format
 from ml.plot_widgets.formater import TimeFormatter
+from ml.log import wlog
 
 class PlotterInfo(object):
     def __init__(self, plotter, ax_plot):
@@ -58,7 +59,7 @@ class MultiWidgetsFrame(BaseFigureFrame):
         self._child_widgets.append(widget)
         if isinstance(widget, SliderAxesWidget):
             if self._slider is None:
-                print("Warn: slider should be create before adding widget.")
+                wlog.warn("Slider should be create before adding widget.")
             else:
                 self._slider.add_observer(widget.on_slider)
         return widget
@@ -125,10 +126,10 @@ class TechnicalFrame(MultiWidgetsFrame):
         self._user_axes = []
 
     def load_data(self, data):
-        print("load_data")
+        wlog.info("Load data with size: {0}".format(len(data)))
         self._data = data
         self.window_left = self.widget_size - self.window_size
-        print("Set window to display latest data, with index: %s" % (self.window_left))
+        wlog.info("Set window to display latest data, with index: %s" % (self.window_left))
 
     def init_layout(self):
         """ 初始化窗口布局
@@ -171,7 +172,3 @@ class TechnicalFrame(MultiWidgetsFrame):
             self._data, bigger_picture_ax, "bigger_picture",
             self.widget_size, self.window_size, self)
         self.add_widget(bigger_picture)
-
-
-if __name__ ==  "__main__":
-    print("ok")
