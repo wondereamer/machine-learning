@@ -1,0 +1,60 @@
+{
+    "version": 1,
+    "disable_existing_loggers": false,
+    "formatters": {
+        "ml": {
+            "class": "ml.log.LogFormatter",
+            "format": "%(color)s[%(levelname)1.1s %(asctime)s %(name)-10s %(module)-10s: %(lineno)-3d]%(end_color)s %(message)s",
+            "datefmt": "%H:%M:%S"
+        },
+        "file_formater": {
+            "class": "ml.log.LogFormatter",
+            "format": "[%(levelname)1.1s %(asctime)s %(name)-10s %(module)-10s: %(lineno)-3d] %(message)s",
+            "datefmt": "%H:%M:%S"
+        }
+    },
+    "handlers": {
+        "console": {
+            "class":"logging.StreamHandler",
+            "level": "DEBUG", 
+            "formatter": "ml",
+            "stream": "ext://sys.stdout"
+
+        },
+        "info_file_handler": {
+            "class":"logging.handlers.RotatingFileHandler",
+            "level": "INFO",
+            "formatter": "file_formater",
+            "filename": "info.log",
+            "maxBytes": 10485760,
+            "backupCount": 40,
+            "encoding": "utf8"
+        },
+        "error_file_handler": {
+            "class":"logging.handlers.RotatingFileHandler",
+            "level": "ERROR",
+            "formatter": "file_formater",
+            "filename": "error.log",
+            "maxBytes": 10485760,
+            "backupCount": 40,
+            "encoding": "utf8"
+        },
+        "socket": {
+            "class":"logging.handlers.SocketHandler",
+            "level": "INFO",
+            "formatter": "ml",
+            "host": "127.0.0.1",
+            "port": 9020
+        }
+    },
+    "loggers": {
+        "ml.logger": {
+            "level": "DEBUG",
+            "handlers": ["console", "info_file_handler", "error_file_handler"]
+        },
+        "ml.widget.logger": {
+            "level": "INFO",
+            "handlers": ["console"]
+        }
+    }
+}

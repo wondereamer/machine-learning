@@ -1,14 +1,14 @@
 '''
 Author: your name
 Date: 2022-02-12 08:08:34
-LastEditTime: 2022-02-19 16:12:11
+LastEditTime: 2022-02-27 17:48:42
 LastEditors: Please set LastEditors
 Description: 打开koroFileHeader查看配置 进行设置: https://github.com/OBKoro1/koro1FileHeader/wiki/%E9%85%8D%E7%BD%AE
 FilePath: /machine-learning/ml/widgets/slider_widget.py
 '''
 
 import six
-from .base_widget import BaseAxesWidget
+from ml.plot_widgets.base_widget import BaseAxesWidget
 
 
 

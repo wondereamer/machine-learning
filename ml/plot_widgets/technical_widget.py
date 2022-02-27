@@ -8,10 +8,10 @@ from matplotlib.widgets import MultiCursor
 import matplotlib.ticker as mticker
 import numpy as np
 
-from ml.widgets.frame_widget import SliderAxesWidget, BirdsEyeWidget
-from .slider_widget import Slider, slider_strtime_format
-from .base_widget import BaseFigureFrame
-from .formater import TimeFormatter
+from ml.plot_widgets.base_widget import BaseFigureFrame
+from ml.plot_widgets.frame_widget import SliderAxesWidget, BirdsEyeWidget
+from ml.plot_widgets.slider_widget import Slider, slider_strtime_format
+from ml.plot_widgets.formater import TimeFormatter
 
 class PlotterInfo(object):
     def __init__(self, plotter, ax_plot):

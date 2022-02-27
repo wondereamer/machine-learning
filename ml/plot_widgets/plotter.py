@@ -1,7 +1,7 @@
 '''
 Author: your name
 Date: 2022-02-19 10:04:35
-LastEditTime: 2022-02-27 00:58:57
+LastEditTime: 2022-02-27 17:55:30
 LastEditors: Please set LastEditors
 Description: 打开koroFileHeader查看配置 进行设置: https://github.com/OBKoro1/koro1FileHeader/wiki/%E9%85%8D%E7%BD%AE
 FilePath: /machine-learning/ml/widgets/plotter.py
@@ -14,11 +14,10 @@ FilePath: /machine-learning/ml/widgets/plotter.py
 # @version 0.15
 # @date 2015-06-13
 
+import numpy as np
 from matplotlib.colors import colorConverter
 from matplotlib.collections import LineCollection, PolyCollection
-from matplotlib.axes import Axes
-from . import events
-import numpy as np
+from ml.plot_widgets import events
 
 class SliderPlotter(object):
     """
@@ -55,7 +54,7 @@ class SliderPlotter(object):
 class Volume(SliderPlotter):
     """ 柱状图。 """
     def __init__(self, open, close, volume, name='volume',
-                 colorup='r', colordown='b', width=1):
+                 colorup='r', colordown='g', width=1):
         self.volume = np.asarray(volume)
         super(Volume, self).__init__(None, name, self.volume, self.volume)
         self.open = open
@@ -166,27 +165,8 @@ class Candles(SliderPlotter):
         ax.add_collection(self.lineCollection)
         return self.lineCollection, self.barCollection
 
-    def set_visible(self, to_show):
-        self.barCollection.set_visible(to_show)
-        self.lineCollection.set_visible(to_show)
-
     def on_slider(self, event):
         if event.name == events.MouseMotionEvent:
-            self.set_visible(False)
+            self.barCollection.set_visible(False)
         elif event.name == events.ButtonReleaseEvent:
-            self.set_visible(True)
-
-class TradingSignal(object):
-    """ 从信号坐标(时间， 价格)中绘制交易信号。 """
-    def __init__(self, signal, name="Signal", c=None, lw=2):
-        self.signal = signal
-        self.name = name
-
-    def plot(self, widget, c="red", lw=2):
-        useAA = 0,  # use tuple here
-        signal = LineCollection(self.signal, colors=c, linewidths=lw,
-                                antialiaseds=useAA)
-        widget.add_collection(signal)
-
-    def y_interval(self, w_left, w_right):
-        return 0, 100000000
+            self.barCollection.set_visible(True)

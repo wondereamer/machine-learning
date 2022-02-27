@@ -1,24 +1,29 @@
 '''
 Author: your name
 Date: 2022-02-19 20:32:30
-LastEditTime: 2022-02-27 00:57:42
+LastEditTime: 2022-02-27 18:08:01
 LastEditors: Please set LastEditors
 Description: 打开koroFileHeader查看配置 进行设置: https://github.com/OBKoro1/koro1FileHeader/wiki/%E9%85%8D%E7%BD%AE
 FilePath: /machine-learning/ml/simple_demo.py
 '''
+import sys
+import os
+path2 = os.path.dirname(__file__)
+sys.path.append(path2)
 from json.tool import main
 import six
 import matplotlib
 matplotlib.use('TkAgg')
 import matplotlib.pyplot as plt
 from matplotlib.ticker import Formatter
-from ml.widgets import mplots
-from ml.widgets.technical_widget import TechnicalFrame, MultiWidgetsFrame
-from ml.widgets.slider_widget import Slider, slider_strtime_format
-from ml.widgets.frame_widget import AxesWidget, SliderAxesWidget, CandleWidget
-from ml.widgets.plotter import SliderPlotter, Volume
+from ml.plot_widgets.technical_widget import TechnicalFrame, MultiWidgetsFrame
+from ml.plot_widgets.slider_widget import Slider, slider_strtime_format
+from ml.plot_widgets.frame_widget import AxesWidget, SliderAxesWidget, CandleWidget
+from ml.plot_widgets.plotter import SliderPlotter, Volume
+from ml.log import wlog, init_loggers
 import pandas as pd
 
+init_loggers()
 
 price_data = pd.read_csv("./test.csv", index_col=0, parse_dates=True)
 
@@ -126,14 +131,14 @@ def technical_widget_demo():
     volume_widget = SliderAxesWidget(axes[1], "subwidget2", widget_size, window_size)
 
     # 绘制第一个窗口
-    # candle_widget.plot_line(price_data.close.values)
+    candle_widget.plot_line(price_data.close.values, "black", lw=1)
     candle_widget.plot_candle()
 
     deals = []
     signals = []
     open_time = price_data.index[-12]
     for close_time in price_data.index[-10: -1]:
-        signals.append((close_time, price_data.close[close_time]))
+        signals.append((close_time, price_data.high[close_time], "buy"))
         deal = Deal()
         deal.open_datetime = open_time
         deal.close_datetime = close_time
@@ -141,9 +146,8 @@ def technical_widget_demo():
         deal.close_price = price_data.close[close_time]
         deals.append(deal)
     
-    candle_widget.plot_signals(deals, signals)
-
-
+    candle_widget.plot_signals(signals)
+    candle_widget.plot_deals(deals)
 
     # 绘制第2个窗口
     volume_plotter = Volume(price_data.open, price_data.close, price_data.volume)
@@ -152,9 +156,6 @@ def technical_widget_demo():
 
     frame.add_widget(candle_widget)
     frame.add_widget(volume_widget)
-
-
-
     frame.show()
 
 
