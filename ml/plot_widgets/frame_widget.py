@@ -1,7 +1,7 @@
 '''
 Author: your name
 Date: 2022-02-12 08:05:30
-LastEditTime: 2022-02-27 18:21:15
+LastEditTime: 2022-03-05 21:15:52
 LastEditors: Please set LastEditors
 Description: 打开koroFileHeader查看配置 进行设置: https://github.com/OBKoro1/koro1FileHeader/wiki/%E9%85%8D%E7%BD%AE
 FilePath: /machine-learning/ml/widgets/fame_widgets.py
@@ -186,11 +186,11 @@ class CandleWidget(SliderAxesWidget):
         self.colors = []
         for deal in deals:
             # ((x0, y0), (x1, y1))
-            p = ((self._data.row[deal.open_datetime], deal.open_price),
-                 (self._data.row[deal.close_datetime], deal.close_price))
+            p = ((self._data.row[deal.open_time], deal.open_price),
+                 (self._data.row[deal.close_time], deal.close_price))
             self.signal.append(p)
             self.colors.append(
-                (1, 0, 0, 1) if deal.profit() > 0 else (0, 1, 0, 1))
+                (1, 0, 0, 1) if deal.profit > 0 else (0, 1, 0, 1))
         useAA = 0,  # use tuple here
         signal = LineCollection(self.signal, colors=self.colors, linewidths=[1] * len(self.colors),
                                 antialiaseds=useAA)

@@ -1,7 +1,7 @@
 '''
 Author: your name
 Date: 2022-02-19 20:32:30
-LastEditTime: 2022-02-28 07:04:20
+LastEditTime: 2022-03-05 21:11:46
 LastEditors: Please set LastEditors
 Description: 打开koroFileHeader查看配置 进行设置: https://github.com/OBKoro1/koro1FileHeader/wiki/%E9%85%8D%E7%BD%AE
 FilePath: /machine-learning/ml/simple_demo.py
@@ -21,6 +21,7 @@ from ml.plot_widgets.slider_widget import Slider, slider_strtime_format
 from ml.plot_widgets.frame_widget import AxesWidget, SliderAxesWidget, CandleWidget
 from ml.plot_widgets.plotter import SliderPlotter, Volume
 from ml.log import wlog, init_loggers
+from ml.finance.datastruct import Deal, Direction
 import pandas as pd
 
 init_loggers()
@@ -32,17 +33,6 @@ price_data = pd.read_csv("./test.csv", index_col=0, parse_dates=True)
 #             tradeBar.Low = csv[3].ToDecimal() * _scaleFactor;
 #             tradeBar.Close = csv[4].ToDecimal() * _scaleFactor;
 #             tradeBar.Volume = csv[5].ToDecimal();
-
-
-class Deal(object):
-    def __init__(self):
-        self.open_datetime = None
-        self.close_datetime = None
-        self.open_price = 0
-        self.close_price = 0
-
-    def profit(self):
-        return self.close_price - self.open_price
 
 class TimeFormatter(Formatter):
     # def __init__(self, dates, fmt='%Y-%m-%d'):
@@ -145,11 +135,9 @@ def technical_widget_demo():
     open_time = price_data.index[-12]
     for close_time in price_data.index[-10: -1]:
         signals.append((close_time, price_data.high[close_time], "buy"))
-        deal = Deal()
-        deal.open_datetime = open_time
-        deal.close_datetime = close_time
-        deal.open_price = price_data.close[open_time]
-        deal.close_price = price_data.close[close_time]
+        deal = Deal(Direction.Long, price_data.close[open_time], price_data.close[close_time],
+            open_time, close_time, 1, 1
+        )
         deals.append(deal)
     
     candle_widget.plot_signals(signals)
