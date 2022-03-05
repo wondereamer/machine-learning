@@ -1,7 +1,7 @@
 '''
 Author: your name
 Date: 2022-02-19 20:32:30
-LastEditTime: 2022-02-27 18:20:44
+LastEditTime: 2022-02-28 07:04:20
 LastEditors: Please set LastEditors
 Description: 打开koroFileHeader查看配置 进行设置: https://github.com/OBKoro1/koro1FileHeader/wiki/%E9%85%8D%E7%BD%AE
 FilePath: /machine-learning/ml/simple_demo.py
@@ -26,6 +26,12 @@ import pandas as pd
 init_loggers()
 
 price_data = pd.read_csv("./test.csv", index_col=0, parse_dates=True)
+
+#  tradeBar.Open = csv[1].ToDecimal() * _scaleFactor;
+#             tradeBar.High = csv[2].ToDecimal() * _scaleFactor;
+#             tradeBar.Low = csv[3].ToDecimal() * _scaleFactor;
+#             tradeBar.Close = csv[4].ToDecimal() * _scaleFactor;
+#             tradeBar.Volume = csv[5].ToDecimal();
 
 
 class Deal(object):

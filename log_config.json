@@ -55,6 +55,10 @@
         "ml.widget.logger": {
             "level": "INFO",
             "handlers": ["console"]
+        },
+        "ml.data.logger": {
+            "level": "DEBUG",
+            "handlers": ["console", "info_file_handler", "error_file_handler"]
         }
     }
 }

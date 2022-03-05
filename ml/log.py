@@ -1,7 +1,7 @@
 '''
 Author: your name
 Date: 2022-02-27 11:15:55
-LastEditTime: 2022-02-27 18:04:49
+LastEditTime: 2022-03-05 20:32:42
 LastEditors: Please set LastEditors
 Description: 打开koroFileHeader查看配置 进行设置: https://github.com/OBKoro1/koro1FileHeader/wiki/%E9%85%8D%E7%BD%AE
 FilePath: /machine-learning/ml/log.py
@@ -131,6 +131,7 @@ class LogFormatter(logging.Formatter):
 
 wlog = logging.getLogger("ml.widget.logger")
 mlog = logging.getLogger("ml.logger")
+dlog = logging.getLogger("ml.data.logger")
 
 
 def init_loggers(config_path="./log_config.json"):
