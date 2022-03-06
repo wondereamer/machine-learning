@@ -1,7 +1,7 @@
 '''
 Author: your name
 Date: 2022-02-28 07:52:42
-LastEditTime: 2022-03-06 15:23:18
+LastEditTime: 2022-03-07 22:35:43
 LastEditors: Please set LastEditors
 Description: 打开koroFileHeader查看配置 进行设置: https://github.com/OBKoro1/koro1FileHeader/wiki/%E9%85%8D%E7%BD%AE
 FilePath: /machine-learning/ml/data/qc.py
@@ -59,10 +59,14 @@ class DataParser(object):
         equity, period = data_symbol.split('-')
         type, market, symbol = equity.split('.')
         data_path = os.path.join(self._data_home, type, market, period, symbol)
+        date_start = parser.parse(date_start)
+        date_end = parser.parse(date_end)
         for root, dirs, files in os.walk(data_path):
             for name in files:
                 if name.endswith(".csv"):
-                    data_paths.append(os.path.join(root, name))
+                    date = self._fname_to_date(name)
+                    if date_start <= date and date <= date_end:
+                        data_paths.append(os.path.join(root, name))
         bar_frames = [self.parse_trade_bars_by_path(path) for path in sorted(data_paths)]
         return pd.concat(bar_frames)
 

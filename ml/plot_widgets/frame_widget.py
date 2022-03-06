@@ -1,7 +1,7 @@
 '''
 Author: your name
 Date: 2022-02-12 08:05:30
-LastEditTime: 2022-03-06 16:11:41
+LastEditTime: 2022-03-07 22:41:40
 LastEditors: Please set LastEditors
 Description: 打开koroFileHeader查看配置 进行设置: https://github.com/OBKoro1/koro1FileHeader/wiki/%E9%85%8D%E7%BD%AE
 FilePath: /machine-learning/ml/widgets/fame_widgets.py
@@ -13,10 +13,17 @@ from matplotlib.widgets import MultiCursor
 from ml.plot_widgets.plotter import Candles
 from ml.plot_widgets.base_widget import BaseAxesWidget
 from ml.plot_widgets.formater import TimeFormatter
-from ml.plot_widgets.slider_widget import slider_strtime_format
 from ml.plot_widgets.events import MouseMotionEvent, ButtonPressEvent
 from ml.finance.datastruct import TradeSide
 from ml.log import wlog as log
+
+
+def slider_strtime_format(delta):
+    """ 根据时间间隔判断周期及slider右侧时间相应的显示形式 """
+    if delta.days >= 1:
+        return '%Y-%m'
+    else:
+        return '%H:%M'
 
 class AxesWidget(BaseAxesWidget):
     """
@@ -69,21 +76,15 @@ class SliderAxesWidget(AxesWidget):
         if event.name in [ MouseMotionEvent, ButtonPressEvent ]:
             self._update_window(event.position)
 
-    def set_window_postion(self, middle):
-        """ 设置窗口的中间位置
-
-        Args:
-            middle (int): 中间位置坐标
-        """
-        self.window_left = middle - self.window_size / 2
-        self._update_window(self._window_left)
+    def set_window_postion(self, left):
+        self._update_window(left)
 
     def _update_window(self, left):
         self.update_window_position(left)
         self.set_window_interval(self.window_left, self.window_right)
-        log.debug("window_left: {0}, window_right: {1}, slider_pos: {2}".format(
-            self.window_left, self.window_right, left
-        ))
+        # log.debug("window_name: {3}, window_left: {0}, window_right: {1}, slider_pos: {2}".format(
+        #     self.window_left, self.window_right, left, self.name
+        # ))
 
     def set_window_interval(self, w_left, w_right):
         all_ymax = []
@@ -110,6 +111,7 @@ class SliderAxesWidget(AxesWidget):
         self.ax.set_xlim(w_left, w_right)
 
     def on_key_release(self, event):
+        log.debug("Key pressed event: %s" % event.key)
         if event.key == u"down":
             middle = (self.window_left + self.window_right) / 2
             self.window_left =  max(1, int(middle - self.window_size))
@@ -166,12 +168,12 @@ class CandleWidget(SliderAxesWidget):
         SliderAxesWidget.__init__(self, ax, name, widget_size, window_size, parent)
         self._data = price_data
         self._data['row'] = [i for i in range(0, len(self._data))]
+        self.signal_x = []
 
     def plot_candle(self):
         candles = Candles(self._data, 'candles')
         candles.plot(self.ax)
         self.add_plotter(candles, False)
-
         delta = (self._data.index[1] - self._data.index[0])
         self.ax.xaxis.set_major_formatter(TimeFormatter(self._data.index, delta))
         self.ax.set_xticks(self._xticks_to_display(0, len(self._data), delta));
@@ -191,7 +193,9 @@ class CandleWidget(SliderAxesWidget):
         signal_y = []
         colors = []
         for signal in signals:
-            signal_x.append(self._data.row[signal[0]] - 0.5)
+            x = self._data.row[signal[0]] - 0.5
+            self.signal_x.append(x)
+            signal_x.append(x)
             signal_y.append(signal[1])
             if signal[2] == TradeSide.Open:
                 colors.append("r")

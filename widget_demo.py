@@ -1,7 +1,7 @@
 '''
 Author: your name
 Date: 2022-02-19 20:32:30
-LastEditTime: 2022-03-05 21:11:46
+LastEditTime: 2022-03-06 16:52:46
 LastEditors: Please set LastEditors
 Description: 打开koroFileHeader查看配置 进行设置: https://github.com/OBKoro1/koro1FileHeader/wiki/%E9%85%8D%E7%BD%AE
 FilePath: /machine-learning/ml/simple_demo.py
@@ -17,7 +17,6 @@ matplotlib.use('TkAgg')
 import matplotlib.pyplot as plt
 from matplotlib.ticker import Formatter
 from ml.plot_widgets.technical_widget import TechnicalFrame, MultiWidgetsFrame
-from ml.plot_widgets.slider_widget import Slider, slider_strtime_format
 from ml.plot_widgets.frame_widget import AxesWidget, SliderAxesWidget, CandleWidget
 from ml.plot_widgets.plotter import SliderPlotter, Volume
 from ml.log import wlog, init_loggers
