@@ -5,12 +5,14 @@ import sys
 import six
 # from six.moves import range
 from matplotlib.widgets import MultiCursor
+from matplotlib.widgets import RadioButtons
 import matplotlib.ticker as mticker
+import matplotlib.pyplot as plt
 import numpy as np
 
 from ml.plot_widgets.base_widget import BaseFigureFrame
 from ml.plot_widgets.frame_widget import SliderAxesWidget, BirdsEyeWidget
-from ml.plot_widgets.slider_widget import Slider, slider_strtime_format
+from ml.plot_widgets.slider_widget import Slider, TimeSliderFormatter
 from ml.plot_widgets.formater import TimeFormatter
 from ml.log import wlog
 
@@ -65,8 +67,9 @@ class MultiWidgetsFrame(BaseFigureFrame):
         return widget
 
     def create_slider(self, slider_axes, index):
+        formatter = TimeSliderFormatter(index)
         slider = Slider(slider_axes, "slider", self.widget_size, self.window_size,
-            self, '', 0, self.widget_size-1, self.widget_size-1, self.widget_size/50, "%d", index)
+            self, '', 0, self.widget_size-1, formatter, self.widget_size-1, self.widget_size/50, "%d", index)
         self.set_slider(slider)
         return self._slider
 
@@ -160,7 +163,24 @@ class TechnicalFrame(MultiWidgetsFrame):
                                     color='r', lw=2, horizOn=True,
                                     vertOn=True)
         self._create_birds_eve_widget()
+        self._create_jump_widget()
         self._init_subwidges_window_position()
+
+    def on_key_release(self, event):
+        if event.key in [u"down", u"up"]:
+            MultiWidgetsFrame.on_key_release(self, event)
+        elif event.key == 'left':
+            for subwidget in self._child_widgets:
+                subwidget.set_window_postion(
+                    max(subwidget.window_left-1, 0)
+                )
+            self._fig.canvas.draw()
+        elif event.key == 'right':
+            for subwidget in self._child_widgets:
+                subwidget.set_window_postion(
+                    min(subwidget.window_left+1, subwidget.widget_size)
+                )
+            self._fig.canvas.draw()
 
     def _create_birds_eve_widget(self):
         slider_pos = self.slider.ax.get_position()
@@ -171,4 +191,16 @@ class TechnicalFrame(MultiWidgetsFrame):
         bigger_picture = BirdsEyeWidget(
             self._data, bigger_picture_ax, "bigger_picture",
             self.widget_size, self.window_size, self)
-        self.add_widget(bigger_picture)
+        # self.add_widget(bigger_picture)
+
+    def _create_jump_widget(self):
+        axcolor = 'lightgoldenrodyellow'
+        slider_pos = self.slider.ax.get_position()
+        width = 0.1
+        span = 0.01
+        rax = plt.axes([slider_pos.x0-width-span, slider_pos.y0, width, slider_pos.y1 - slider_pos.y0], facecolor=axcolor)
+        self._radio = RadioButtons(rax, ('period', 'day', 'signal'))
+        self._jump_unit = "period"
+        def set_jum_unit(unit):
+            self._jump_unit = unit
+        self._radio.on_clicked(set_jum_unit)
