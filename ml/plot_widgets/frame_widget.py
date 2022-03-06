@@ -1,7 +1,7 @@
 '''
 Author: your name
 Date: 2022-02-12 08:05:30
-LastEditTime: 2022-03-05 21:15:52
+LastEditTime: 2022-03-06 15:56:07
 LastEditors: Please set LastEditors
 Description: 打开koroFileHeader查看配置 进行设置: https://github.com/OBKoro1/koro1FileHeader/wiki/%E9%85%8D%E7%BD%AE
 FilePath: /machine-learning/ml/widgets/fame_widgets.py
@@ -15,6 +15,7 @@ from ml.plot_widgets.base_widget import BaseAxesWidget
 from ml.plot_widgets.formater import TimeFormatter
 from ml.plot_widgets.slider_widget import slider_strtime_format
 from ml.plot_widgets.events import MouseMotionEvent, ButtonPressEvent
+from ml.finance.datastruct import TradeSide
 from ml.log import wlog
 
 class AxesWidget(BaseAxesWidget):
@@ -168,33 +169,38 @@ class CandleWidget(SliderAxesWidget):
         # 默认共用axes, 绕过了窗口设置
         return self.ax.plot(data, *args, **kwargs)
 
-    def plot_signals(self, signals):
+    def plot_signals(self, deals):
+        signals = []
+        for deal in deals:
+            signals.append((deal.open_time, self._data.open[deal.open_time], TradeSide.Open))
+            if deal.close_time is not None:
+                signals.append((deal.close_time, self._data.open[deal.close_time], TradeSide.Close))
         signal_x = []
         signal_y = []
         colors = []
         for signal in signals:
             signal_x.append(self._data.row[signal[0]] - 0.5)
             signal_y.append(signal[1])
-            if signal[2] == "buy":
+            if signal[2] == TradeSide.Open:
                 colors.append("r")
-        colors[-1] = "g"
-        colors[-2] = "g"
+            else:
+                colors.append("g")
         return self.ax.scatter(signal_x, signal_y, c=colors, marker=">")
 
     def plot_deals(self, deals):
-        self.signal = []
-        self.colors = []
+        data = []
+        colors = []
         for deal in deals:
+            # deal.open_price可能偏移出当前窗口，无法显示。及有可能是价格的问题。
+            # 可以做冗余显示，把价格也标出来。只标成交价容易忽视问题。 
             # ((x0, y0), (x1, y1))
-            p = ((self._data.row[deal.open_time], deal.open_price),
-                 (self._data.row[deal.close_time], deal.close_price))
-            self.signal.append(p)
-            self.colors.append(
-                (1, 0, 0, 1) if deal.profit > 0 else (0, 1, 0, 1))
-        useAA = 0,  # use tuple here
-        signal = LineCollection(self.signal, colors=self.colors, linewidths=[1] * len(self.colors),
-                                antialiaseds=useAA)
-        return self.ax.add_collection(signal)
+            p = ((self._data.row[deal.open_time], self._data.open[deal.open_time]),
+                 (self._data.row[deal.close_time], self._data.open[deal.close_time]))
+            data.append(p)
+            colors.append("r" if deal.profit > 0 else "g")
+        use_tuple = 0
+        lines = LineCollection(data, colors=colors, linewidths=1, antialiaseds=use_tuple)
+        return self.ax.add_collection(lines)
 
     def draw_widget(self):
         pass

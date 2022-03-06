@@ -125,7 +125,7 @@ class TechnicalFrame(MultiWidgetsFrame):
         self._cursor_axes_index = { }
         self._user_axes = []
 
-    def load_data(self, data):
+    def set_data(self, data):
         wlog.info("Load data with size: {0}".format(len(data)))
         self._data = data
         self.window_left = self.widget_size - self.window_size
