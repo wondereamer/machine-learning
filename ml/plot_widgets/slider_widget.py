@@ -1,7 +1,7 @@
 '''
 Author: your name
 Date: 2022-02-12 08:08:34
-LastEditTime: 2022-02-27 17:48:42
+LastEditTime: 2022-03-06 16:35:28
 LastEditors: Please set LastEditors
 Description: 打开koroFileHeader查看配置 进行设置: https://github.com/OBKoro1/koro1FileHeader/wiki/%E9%85%8D%E7%BD%AE
 FilePath: /machine-learning/ml/widgets/slider_widget.py
@@ -9,17 +9,15 @@ FilePath: /machine-learning/ml/widgets/slider_widget.py
 
 import six
 from ml.plot_widgets.base_widget import BaseAxesWidget
+from ml.log import wlog as log
 
 
 
 def slider_strtime_format(delta):
-    """ 根据时间间隔判断周期及slider上相应的显示形式 """
+    """ 根据时间间隔判断周期及slider右侧时间相应的显示形式 """
     if delta.days >= 1:
         return '%Y-%m'
-    elif delta.seconds == 60:
-        return '%H:%M'
     else:
-        # 日内其它分钟
         return '%H:%M'
 
 
@@ -108,19 +106,24 @@ class Slider(BaseAxesWidget):
         ax.set_navigate(False)
 
     def _xticks_to_display(self, valmax):
-        interval = valmax / 5
+        # 显示横坐标的间隔
+        # delta = < day = 天为单位, 计算出几天
+        # delata = day   月, 计算出几个月
+        # delata = week  年
+        interval = valmax / 4
         v = 0
         xticks = []
-        for i in range(0, 6):
+        for i in range(0, 4):
             xticks.append(v)
             v += interval
+        log.debug(xticks)
         return xticks
 
 
     def _value_format(self, x):
-        """docstring for timess"""
+        """ 滑块右侧的文字"""
         ind = int(round(x))
-        if ind>=len(self._index) or ind<0: return ''
+        if ind >= len(self._index) or ind < 0: return ''
         return self._index[ind].strftime(self._fmt)
 
 
@@ -128,6 +131,7 @@ class Slider(BaseAxesWidget):
             time_index = None, **kwargs):
         """ [valmin, valmax] """
         self.ax.set_xticks(self._xticks_to_display(valmax))
+        self._fmt = slider_strtime_format(time_index[1] - time_index[0])
         self._index = time_index
         self.valmin = valmin
         self.valmax = valmax
@@ -135,7 +139,6 @@ class Slider(BaseAxesWidget):
         self.valinit = valinit
         self.width = width
         self.valfmt = valfmt
-        self._fmt = slider_strtime_format(time_index[1] - time_index[0])
         self.ax.set_xlim((valmin, valmax))
         self._data_length = valmax
 
@@ -231,10 +234,8 @@ class Slider(BaseAxesWidget):
         xy[2] = val, 1
         xy[3] = val, 0
         self.val = val
-        self.poly.remove()
-        self.poly = self.ax.axvspan(val-self.width/2, val+self.width/2, 0, 1)
-        #self.poly.xy = xy
-        #self.valtext.set_text(self.valfmt % val)
+        self.poly.remove()  # 删除滑块
+        self.poly = self.ax.axvspan(val-self.width/2, val+self.width/2, 0, 1)  # 重建滑块
         self.valtext.set_text(self._value_format(val))
         self.val = val
         if not self.eventson:

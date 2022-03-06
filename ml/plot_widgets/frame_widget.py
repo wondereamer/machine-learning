@@ -1,7 +1,7 @@
 '''
 Author: your name
 Date: 2022-02-12 08:05:30
-LastEditTime: 2022-03-06 15:56:07
+LastEditTime: 2022-03-06 16:11:41
 LastEditors: Please set LastEditors
 Description: 打开koroFileHeader查看配置 进行设置: https://github.com/OBKoro1/koro1FileHeader/wiki/%E9%85%8D%E7%BD%AE
 FilePath: /machine-learning/ml/widgets/fame_widgets.py
@@ -16,7 +16,7 @@ from ml.plot_widgets.formater import TimeFormatter
 from ml.plot_widgets.slider_widget import slider_strtime_format
 from ml.plot_widgets.events import MouseMotionEvent, ButtonPressEvent
 from ml.finance.datastruct import TradeSide
-from ml.log import wlog
+from ml.log import wlog as log
 
 class AxesWidget(BaseAxesWidget):
     """
@@ -52,7 +52,7 @@ class AxesWidget(BaseAxesWidget):
 
 
 class SliderAxesWidget(AxesWidget):
-    """ 带滑动事件响应支持的AxesWidget
+    """ 带滑动事件响应支持的AxesWidget, 但本身不带滑块控件
 
     Args:
         AxesWidget (AxesWidget): Axes窗口
@@ -69,6 +69,22 @@ class SliderAxesWidget(AxesWidget):
         if event.name in [ MouseMotionEvent, ButtonPressEvent ]:
             self._update_window(event.position)
 
+    def set_window_postion(self, middle):
+        """ 设置窗口的中间位置
+
+        Args:
+            middle (int): 中间位置坐标
+        """
+        self.window_left = middle - self.window_size / 2
+        self._update_window(self._window_left)
+
+    def _update_window(self, left):
+        self.update_window_position(left)
+        self.set_window_interval(self.window_left, self.window_right)
+        log.debug("window_left: {0}, window_right: {1}, slider_pos: {2}".format(
+            self.window_left, self.window_right, left
+        ))
+
     def set_window_interval(self, w_left, w_right):
         all_ymax = []
         all_ymin = []
@@ -77,7 +93,7 @@ class SliderAxesWidget(AxesWidget):
         for plotter in self.plotters.values():
             assert w_right > w_left
             if plotter in self.twinx_plotters:
-                wlog.info("Inore intervals of window: " + plotter.name)
+                log.info("Inore intervals of window: " + plotter.name)
                 # continue
             ymax, ymin = plotter.y_interval(w_left, w_right)
             ## @todo move ymax, ymin 计算到plot中去。
@@ -93,10 +109,6 @@ class SliderAxesWidget(AxesWidget):
         self.ax.set_ylim((ymin, ymax))
         self.ax.set_xlim(w_left, w_right)
 
-    def _update_window(self, position):
-        self.update_window_position(position)
-        self.set_window_interval(self.window_left, self.window_right)
-
     def on_key_release(self, event):
         if event.key == u"down":
             middle = (self.window_left + self.window_right) / 2
@@ -105,8 +117,8 @@ class SliderAxesWidget(AxesWidget):
             self.set_window_interval(self.window_left, self.window_right)
 
             middle = (self.window_left + self.window_right) / 2
-            wlog.debug("window: ")
-            wlog.debug((self.window_left, middle, self.window_right, self.window_size))
+            log.debug("window: ")
+            log.debug((self.window_left, middle, self.window_right, self.window_size))
 
         elif event.key == u"up" :
             middle = (self.window_left + self.window_right) / 2
@@ -114,9 +126,9 @@ class SliderAxesWidget(AxesWidget):
             self.window_left =  max(1, int(middle - self.window_size/2))
             self.set_window_interval(self.window_left, self.window_right)
 
-            wlog.debug("window: ")
+            log.debug("window: ")
             middle = (self.window_left + self.window_right) / 2
-            wlog.debug((self.window_left, middle, self.window_right, self.window_size))
+            log.debug((self.window_left, middle, self.window_right, self.window_size))
 
 
 class BirdsEyeWidget(SliderAxesWidget):
