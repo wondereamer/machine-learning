@@ -1,17 +1,19 @@
 '''
 Author: your name
 Date: 2022-02-28 07:52:42
-LastEditTime: 2022-03-07 22:35:43
+LastEditTime: 2022-03-10 22:24:15
 LastEditors: Please set LastEditors
 Description: 打开koroFileHeader查看配置 进行设置: https://github.com/OBKoro1/koro1FileHeader/wiki/%E9%85%8D%E7%BD%AE
 FilePath: /machine-learning/ml/data/qc.py
 '''
 import math
+import zipfile
 import os
 from copy import deepcopy
 import json
 import datetime
 import pandas as pd
+from io import StringIO
 from pathlib import Path
 from dateutil import parser
 from typing import Dict, List
@@ -26,15 +28,19 @@ class DataParser(object):
         self._data_home = data_home
 
     def parse_trade_bars_by_path(self, path):
-        with open(path, "r") as file:
-            headers = ["open", "high", "low", "close", "volume"]
-            fname = Path(path).stem
-            date = self._fname_to_date(fname)
-            def custom_data_parser(offset):
-                time = date + datetime.timedelta(milliseconds=int(offset))
-                return time
-            price_data = pd.read_csv(path, header=None, names=headers,
-                index_col=0, date_parser=custom_data_parser)
+        headers = ["open", "high", "low", "close", "volume"]
+        fname = Path(path).stem
+        date = self._fname_to_date(fname)
+        def custom_data_parser(offset):
+            time = date + datetime.timedelta(milliseconds=int(str(offset)))
+            return time
+
+        z = zipfile.ZipFile(path, "r")
+        fname = z.namelist()[0]
+        content = z.read(fname).decode()
+        price_data = pd.read_csv(StringIO(content), header=None, names=headers,
+            index_col=0, date_parser=custom_data_parser)
+        z.close()
         return self._adjust_price(price_data)
     
     def _adjust_price(self, price_data):
@@ -63,7 +69,7 @@ class DataParser(object):
         date_end = parser.parse(date_end)
         for root, dirs, files in os.walk(data_path):
             for name in files:
-                if name.endswith(".csv"):
+                if name.endswith("trade.zip"):
                     date = self._fname_to_date(name)
                     if date_start <= date and date <= date_end:
                         data_paths.append(os.path.join(root, name))
@@ -139,6 +145,29 @@ class ResultParser(object):
             status, 1
         )
         return order
+
+    def get_indicators(self):
+        charts = self._data["Charts"]
+        indicators = []
+        for v in charts.values():
+            for key in v["Series"].keys():
+                if '(' in key and ')' in key:
+                    indicator = list(v["Series"].values())[0]
+                    indicator["RealName"] = v["Name"]
+                    indicators.append(indicator)
+
+        rst = []
+        for indicator in indicators:
+            y = [v['y'] for v in indicator["Values"]]
+            time = [datetime.datetime.fromtimestamp(v["x"]) for v in indicator["Values"]]
+            indicator_ = {
+                "name": indicator["RealName"],
+                "info": indicator["Name"],
+                "values": pd.Series(y, index=time)
+            }
+            rst.append(indicator_)
+        return rst
+
         
     def get_transactions(self):
         if self._transactions is not None:
