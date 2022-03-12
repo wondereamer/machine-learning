@@ -1,12 +1,13 @@
 '''
 Author: your name
 Date: 2022-02-28 07:52:42
-LastEditTime: 2022-03-10 22:24:15
+LastEditTime: 2022-03-12 18:19:35
 LastEditors: Please set LastEditors
 Description: 打开koroFileHeader查看配置 进行设置: https://github.com/OBKoro1/koro1FileHeader/wiki/%E9%85%8D%E7%BD%AE
 FilePath: /machine-learning/ml/data/qc.py
 '''
-import math
+from ast import arguments
+import re
 import zipfile
 import os
 from copy import deepcopy
@@ -19,7 +20,7 @@ from dateutil import parser
 from typing import Dict, List
 from dateutil import parser, tz
 
-from ml.finance.datastruct import Direction, OrderStatus, Order, OrderType, TradeSide
+from ml.finance.datastruct import Direction, OrderStatus, Order, OrderType, Period, TradeSide, MarketData
 from ml.log import dlog as log
 
 class DataParser(object):
@@ -147,15 +148,14 @@ class ResultParser(object):
         return order
 
     def get_indicators(self):
-        charts = self._data["Charts"]
         indicators = []
-        for v in charts.values():
-            for key in v["Series"].keys():
-                if '(' in key and ')' in key:
-                    indicator = list(v["Series"].values())[0]
-                    indicator["RealName"] = v["Name"]
+        charts = self._data["Charts"]
+        for chart in charts.values():
+            for series in chart["Series"].values():
+                if '(' in series["Name"] and ')' in series["Name"]:
+                    indicator = series
+                    indicator["RealName"] = chart["Name"]
                     indicators.append(indicator)
-
         rst = []
         for indicator in indicators:
             y = [v['y'] for v in indicator["Values"]]
@@ -165,10 +165,63 @@ class ResultParser(object):
                 "info": indicator["Name"],
                 "values": pd.Series(y, index=time)
             }
+            indicator_["info"] =  self._parse_indicator_info(indicator_["info"])
             rst.append(indicator_)
         return rst
 
-        
+    def _parse_indicator_info(self, info):
+        m = re.match(r"(.*)\((\d*),(\D*)_(\D*)\)", info)
+        map_period = {
+            "min": Period.Minute,
+            "hour": Period.Hour,
+            "day": Period.Day,
+        }
+        if m is None:
+            raise Exception("Failed to parse indicator info")
+        type, arg, symbol, period = m.group(1, 2, 3, 4)
+        period = map_period[period]
+        return {
+            "type": type,
+            "arguments": arg,
+            "symbol": symbol,
+            "period": period
+        }
+
+    def get_market_data(self, name: str):
+        if name == MarketData.TradeBar.name:
+            ohlcv = self._get_series(["Open", "High", "Low", "Close", "Volume"], name)
+            time = [datetime.datetime.fromtimestamp(v["x"]) for v in ohlcv[0]["Values"]]
+            open = [v['y'] for v in ohlcv[0]["Values"]]
+            high = [v['y'] for v in ohlcv[1]["Values"]]
+            low = [v['y'] for v in ohlcv[2]["Values"]]
+            close = [v['y'] for v in ohlcv[3]["Values"]]
+            volume = [v['y'] for v in ohlcv[4]["Values"]]
+            return pd.DataFrame({
+                "open": open,
+                "high": high,
+                "low": low,
+                "close": close,
+                "volume": volume
+            }, index=time)
+        return None
+
+    def _get_series(self, names: List[str], chart_name=None, is_target_series=None):
+        if is_target_series is None:
+            is_target_series = lambda x: x["Name"] in names
+        rst = []
+        charts = self._data["Charts"]
+        if chart_name is None:
+            for chart in charts.values():
+                for series in chart["Series"].values():
+                    if is_target_series(series):
+                        rst.append(series)
+        else:
+            chart = charts[chart_name]
+            for series in chart["Series"].values():
+                if is_target_series(series):
+                    rst.append(series)
+        return rst
+
     def get_transactions(self):
         if self._transactions is not None:
             return self._transactions

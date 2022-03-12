@@ -1,7 +1,7 @@
 '''
 Author: your name
 Date: 2022-02-19 10:04:35
-LastEditTime: 2022-03-06 18:25:45
+LastEditTime: 2022-03-12 10:09:19
 LastEditors: Please set LastEditors
 Description: 打开koroFileHeader查看配置 进行设置: https://github.com/OBKoro1/koro1FileHeader/wiki/%E9%85%8D%E7%BD%AE
 FilePath: /machine-learning/ml/widgets/plotter.py
@@ -37,6 +37,8 @@ class SliderPlotter(object):
         if len(self._upper) == 2:
             # 就两个值，分别代表上下界。
             return max(self._upper), min(self._lower)
+        if w_right > len(self._upper) or w_right > len(self._lower):
+            raise Exception("数据长度不一致导致，需要换算出对应的数据索引。")
         ymax = np.max(self._upper[w_left: w_right])
         ymin = np.min(self._lower[w_left: w_right])
         return ymax, ymin

@@ -1,16 +1,17 @@
 '''
 Author: your name
 Date: 2022-02-12 08:05:30
-LastEditTime: 2022-03-07 22:41:40
+LastEditTime: 2022-03-12 19:10:10
 LastEditors: Please set LastEditors
 Description: 打开koroFileHeader查看配置 进行设置: https://github.com/OBKoro1/koro1FileHeader/wiki/%E9%85%8D%E7%BD%AE
 FilePath: /machine-learning/ml/widgets/fame_widgets.py
 '''
 import matplotlib.pyplot as plt
+import pandas as pd
 from matplotlib.collections import LineCollection
 from matplotlib.widgets import MultiCursor
 
-from ml.plot_widgets.plotter import Candles
+from ml.plot_widgets.plotter import Candles, SliderPlotter
 from ml.plot_widgets.base_widget import BaseAxesWidget
 from ml.plot_widgets.formater import TimeFormatter
 from ml.plot_widgets.events import MouseMotionEvent, ButtonPressEvent
@@ -171,6 +172,7 @@ class CandleWidget(SliderAxesWidget):
         self.signal_x = []
 
     def plot_candle(self):
+        # only plot candle use plotter, avoid other plot invoking y_interval
         candles = Candles(self._data, 'candles')
         candles.plot(self.ax)
         self.add_plotter(candles, False)
@@ -181,7 +183,20 @@ class CandleWidget(SliderAxesWidget):
 
     def plot_line(self, data, *args, **kwargs):
         # 默认共用axes, 绕过了窗口设置
-        return self.ax.plot(data, *args, **kwargs)
+        ax = self.ax
+        line = SliderPlotter(ax, kwargs["name"], data, data)
+        plot = line.ax.plot(data)
+        self.add_plotter(line, False)
+        return plot
+
+    def plot_indicators(self, indicators):
+        for i, indic in enumerate(indicators):
+            series: pd.Series = indic["values"]
+            y = series.values.tolist()
+            if len(self._data) != len(y):
+                raise Exception("数据长度不同, 需修改x的开始偏移值")
+            # self.plot_line(y, name=name)
+            self.ax.plot(range(0, len(y)), y)
 
     def plot_signals(self, deals):
         signals = []

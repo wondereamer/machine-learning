@@ -1,7 +1,7 @@
 '''
 Author: wondereamer
 Date: 2022-03-05 21:18:04
-LastEditTime: 2022-03-07 14:05:12
+LastEditTime: 2022-03-12 19:06:17
 LastEditors: Please set LastEditors
 Description: 打开koroFileHeader查看配置 进行设置: https://github.com/OBKoro1/koro1FileHeader/wiki/%E9%85%8D%E7%BD%AE
 FilePath: /machine-learning/qc_widget_demo.py
@@ -49,13 +49,16 @@ class QCWidget(object):
     def __init__(self):
         pass
 
-    def load_data(self, name, start_date, end_date):
-        parser = qc.DataParser(util.data_path)
+    def load_data(self, data_path, name, start_date, end_date):
+        parser = qc.DataParser(data_path)
         self.price_data = parser.parse_trade_bars(name, start_date, end_date)
 
-    def load_result(self, fpath):
+    def load_result(self, fpath, market_data_name=None):
+        # TODO add start_date, end_date
         self._result = qc.ResultParser()
         self._result.read_data(fpath)
+        if market_data_name is not None:
+            self.price_data = self._result.get_market_data(market_data_name)
 
 
     def create_widgets(self):
@@ -68,16 +71,20 @@ class QCWidget(object):
         axes = frame.init_layout()
 
         candle_widget = CandleWidget(self.price_data, axes[0], "candle_widget", widget_size, window_size)
-        volume_widget = SliderAxesWidget(axes[1], "subwidget2", widget_size, window_size)
+        volume_widget = SliderAxesWidget(axes[1], "volume_widget", widget_size, window_size)
 
         # 绘制第一个窗口
-        candle_widget.plot_line(self.price_data.close.values, "black", lw=1)
+        # candle_widget.plot_line(self.price_data.close.values, "black", lw=1)
         candle_widget.plot_candle()
 
-        orders = self._result.get_orders()
-        deals = analysis.orders_to_deals(orders)
-        candle_widget.plot_signals(deals)
-        candle_widget.plot_deals(deals)
+        # deals = analysis.orders_to_deals(orders)
+        # candle_widget.plot_signals(deals)
+
+        # orders = self._result.get_orders()
+        # candle_widget.plot_deals(deals)
+
+        indicators = self._result.get_indicators()
+        candle_widget.plot_indicators(indicators)
 
         # 绘制第2个窗口
         volume_plotter = Volume(self.price_data.open, self.price_data.close, self.price_data.volume)
@@ -91,7 +98,8 @@ class QCWidget(object):
 
 widget = QCWidget()
 name = "equity.usa.spy-minute"
-file_path = os.path.join(util.data_path, "result.json")
-widget.load_data(name, '2013-10-07', '2013-10-08')
-widget.load_result(file_path)
+data_path = '/Users/wdj/Work/Lean-master/Data'
+result_path = '/Users/wdj/Work/Lean-master/Launcher/bin/Debug'
+file_path = os.path.join(result_path, "CustomIndicatorAlgorithm.json")
+widget.load_result(file_path, "TradeBar")
 widget.create_widgets()
