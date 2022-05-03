@@ -1,7 +1,7 @@
 '''
 Author: your name
 Date: 2022-02-28 07:52:42
-LastEditTime: 2022-03-12 18:19:35
+LastEditTime: 2022-05-01 21:41:38
 LastEditors: Please set LastEditors
 Description: 打开koroFileHeader查看配置 进行设置: https://github.com/OBKoro1/koro1FileHeader/wiki/%E9%85%8D%E7%BD%AE
 FilePath: /machine-learning/ml/data/qc.py
@@ -19,6 +19,7 @@ from pathlib import Path
 from dateutil import parser
 from typing import Dict, List
 from dateutil import parser, tz
+import time
 
 from ml.finance.datastruct import Direction, OrderStatus, Order, OrderType, Period, TradeSide, MarketData
 from ml.log import dlog as log
@@ -29,12 +30,14 @@ class DataParser(object):
         self._data_home = data_home
 
     def parse_trade_bars_by_path(self, path):
+        # TODO parse daily and hours data
         headers = ["open", "high", "low", "close", "volume"]
         fname = Path(path).stem
         date = self._fname_to_date(fname)
         def custom_data_parser(offset):
-            time = date + datetime.timedelta(milliseconds=int(str(offset)))
-            return time
+            dt = date + datetime.timedelta(milliseconds=int(str(offset)))
+            # dt = dt.astimezone(datetime.timezone.utc)
+            return dt
 
         z = zipfile.ZipFile(path, "r")
         fname = z.namelist()[0]
@@ -42,9 +45,9 @@ class DataParser(object):
         price_data = pd.read_csv(StringIO(content), header=None, names=headers,
             index_col=0, date_parser=custom_data_parser)
         z.close()
-        return self._adjust_price(price_data)
+        return self._scale_price(price_data)
     
-    def _adjust_price(self, price_data):
+    def _scale_price(self, price_data):
         price_data['open'] = price_data['open'] / 10000
         price_data['close'] = price_data['close'] / 10000
         price_data['high'] = price_data['high'] / 10000
@@ -126,6 +129,9 @@ class ResultParser(object):
             new_order.create_time = bars.index[index]
             yield new_order
 
+    def _convert_timezone(self, t):
+        return t - datetime.timedelta(hours=12)
+
     def _parse_order(self, d_order: Dict):
         assert d_order["Direction"] != 3
         try:
@@ -138,7 +144,6 @@ class ResultParser(object):
         direction = Direction.Long   # QC不支持多空对持仓, 这里就是不支持做空了。
         side = TradeSide.Open if d_order["Quantity"] > 0 else TradeSide.Close
         utc_time = parser.parse(d_order["LastFillTime"])
-        # local_time = time.astimezone(tz.gettz('Asia/Shanghai'))
         utc_time = pd.to_datetime(utc_time.replace(tzinfo=None)) # utc time without timezone info
         order = Order(
             d_order["Id"], utc_time, d_order["Symbol"]["Value"],
@@ -159,7 +164,8 @@ class ResultParser(object):
         rst = []
         for indicator in indicators:
             y = [v['y'] for v in indicator["Values"]]
-            time = [datetime.datetime.fromtimestamp(v["x"]) for v in indicator["Values"]]
+            time_ = [datetime.datetime.fromtimestamp(v["x"]) for v in indicator["Values"]]
+            time = [self._convert_timezone(t) for t in time_]
             indicator_ = {
                 "name": indicator["RealName"],
                 "info": indicator["Name"],
@@ -189,8 +195,10 @@ class ResultParser(object):
 
     def get_market_data(self, name: str):
         if name == MarketData.TradeBar.name:
-            ohlcv = self._get_series(["Open", "High", "Low", "Close", "Volume"], name)
-            time = [datetime.datetime.fromtimestamp(v["x"]) for v in ohlcv[0]["Values"]]
+            ohlcv = self._get_dict_series(["Open", "High", "Low", "Close", "Volume"], name)
+
+            time_ = [datetime.datetime.fromtimestamp(v["x"]) for v in ohlcv[0]["Values"]]
+            time = [self._convert_timezone(t) for t in time_]
             open = [v['y'] for v in ohlcv[0]["Values"]]
             high = [v['y'] for v in ohlcv[1]["Values"]]
             low = [v['y'] for v in ohlcv[2]["Values"]]
@@ -205,7 +213,19 @@ class ResultParser(object):
             }, index=time)
         return None
 
-    def _get_series(self, names: List[str], chart_name=None, is_target_series=None):
+    def get_pandas_series(self, series_: List[str], chart_name: str=None):
+        rst = []
+        list_series  = self._get_dict_series(series_, chart_name)
+        for series in list_series:
+            time_ = [datetime.datetime.fromtimestamp(v["x"]) for v in series["Values"]]
+            time = [self._convert_timezone(t) for t in time_]
+            value = [v['y'] for v in series["Values"]]
+            rst.append(pd.Series(value, index=time))
+        if len(rst) == 0:
+            raise Exception("Failed to get series")
+        return tuple(rst)
+
+    def _get_dict_series(self, names: List[str], chart_name: str=None, is_target_series=None):
         if is_target_series is None:
             is_target_series = lambda x: x["Name"] in names
         rst = []

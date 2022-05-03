@@ -1,7 +1,7 @@
 '''
 Author: your name
 Date: 2020-05-03 17:38:48
-LastEditTime: 2022-03-06 10:46:51
+LastEditTime: 2022-05-01 10:59:27
 LastEditors: Please set LastEditors
 Description: 打开koroFileHeader查看配置 进行设置: https://github.com/OBKoro1/koro1FileHeader/wiki/%E9%85%8D%E7%BD%AE
 FilePath: /machine-learning/ml/util/util.py
@@ -26,6 +26,7 @@ def cached_func(function):
 
 home_path = Path(os.path.dirname(__file__)).parent.absolute()
 data_path = os.path.join(Path(os.path.dirname(__file__)).parent.parent.absolute(), "data")
+test_path = os.path.join(Path(os.path.dirname(__file__)).parent.parent.absolute(), "tests")
 
 def set_home_path_to_sys():
     sys.path.append(str(home_path))

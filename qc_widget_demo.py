@@ -1,7 +1,7 @@
 '''
 Author: wondereamer
 Date: 2022-03-05 21:18:04
-LastEditTime: 2022-03-12 19:06:17
+LastEditTime: 2022-03-13 12:29:28
 LastEditors: Please set LastEditors
 Description: 打开koroFileHeader查看配置 进行设置: https://github.com/OBKoro1/koro1FileHeader/wiki/%E9%85%8D%E7%BD%AE
 FilePath: /machine-learning/qc_widget_demo.py
@@ -59,7 +59,8 @@ class QCWidget(object):
         self._result.read_data(fpath)
         if market_data_name is not None:
             self.price_data = self._result.get_market_data(market_data_name)
-
+            log.debug(self.price_data)
+        self.cross_over, = self._result.get_pandas_series(["cross_over"])
 
     def create_widgets(self):
         fig = plt.figure()
@@ -74,17 +75,17 @@ class QCWidget(object):
         volume_widget = SliderAxesWidget(axes[1], "volume_widget", widget_size, window_size)
 
         # 绘制第一个窗口
-        # candle_widget.plot_line(self.price_data.close.values, "black", lw=1)
         candle_widget.plot_candle()
+        # candle_widget.plot_line("close", self.price_data.close.values, "black", lw=1)
 
         # deals = analysis.orders_to_deals(orders)
-        # candle_widget.plot_signals(deals)
 
         # orders = self._result.get_orders()
         # candle_widget.plot_deals(deals)
 
         indicators = self._result.get_indicators()
         candle_widget.plot_indicators(indicators)
+        candle_widget.plot_signals(self.cross_over, "r", ">", -0.5)
 
         # 绘制第2个窗口
         volume_plotter = Volume(self.price_data.open, self.price_data.close, self.price_data.volume)

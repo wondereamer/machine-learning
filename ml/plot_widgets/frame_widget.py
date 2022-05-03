@@ -1,7 +1,7 @@
 '''
 Author: your name
 Date: 2022-02-12 08:05:30
-LastEditTime: 2022-04-28 22:16:08
+LastEditTime: 2022-04-28 22:18:03
 LastEditors: Please set LastEditors
 Description: 打开koroFileHeader查看配置 进行设置: https://github.com/OBKoro1/koro1FileHeader/wiki/%E9%85%8D%E7%BD%AE
 FilePath: /machine-learning/ml/widgets/fame_widgets.py
@@ -11,11 +11,12 @@ import pandas as pd
 from matplotlib.collections import LineCollection
 from matplotlib.widgets import MultiCursor
 
+from typing import List, Dict
 from ml.plot_widgets.plotter import Candles, SliderPlotter
 from ml.plot_widgets.base_widget import BaseAxesWidget
 from ml.plot_widgets.formater import TimeFormatter
 from ml.plot_widgets.events import MouseMotionEvent, ButtonPressEvent
-from ml.finance.datastruct import TradeSide
+from ml.finance.datastruct import TradeSide, Signal, Deal
 from ml.log import wlog as log
 
 
@@ -170,6 +171,7 @@ class CandleWidget(SliderAxesWidget):
         self._data = price_data
         self._data['row'] = [i for i in range(0, len(self._data))]
         self.signal_x = []
+        self._indicators = {}
 
     def plot_candle(self):
         # only plot candle use plotter, avoid other plot invoking y_interval
@@ -181,42 +183,44 @@ class CandleWidget(SliderAxesWidget):
         self.ax.set_xticks(self._xticks_to_display(0, len(self._data), delta));
         self.ax.format_coord = self._format_coord
 
-    def plot_line(self, data, *args, **kwargs):
+    def plot_line(self, name, data, *args, **kwargs):
         # 默认共用axes, 绕过了窗口设置
         ax = self.ax
-        line = SliderPlotter(ax, kwargs["name"], data, data)
-        plot = line.ax.plot(data)
+        line = SliderPlotter(ax, name, data, data)
+        plot = line.ax.plot(data, *args, **kwargs)
         self.add_plotter(line, False)
         return plot
 
-    def plot_indicators(self, indicators):
+    def plot_indicators(self, indicators: List[Dict]):
         for i, indic in enumerate(indicators):
             series: pd.Series = indic["values"]
             y = series.values.tolist()
             if len(self._data) != len(y):
                 raise Exception("数据长度不同, 需修改x的开始偏移值")
             # self.plot_line(y, name=name)
-            self.ax.plot(range(0, len(y)), y)
+            # TODO 优化，计算出初始偏移
+            x = [self._data.row[t] for t in series.index]
+            self.ax.plot(x, y)
+            self._indicators[indic["name"]] = series
 
-    def plot_signals(self, deals):
-        signals = []
+    def plot_signals(self, signals: pd.Series, color: str, marker: str, offset: float=-0.5):
+        x = [self._data.row[time]+offset for time in signals.index]
+        return self.ax.scatter(x, signals.values, color=color, marker=marker)
+
+    def plot_trades(self, deals: List[Deal]):
+        open_signals_time = []
+        open_signals_price = []
+        close_signals_time = []
+        close_signals_price = []
         for deal in deals:
-            signals.append((deal.open_time, self._data.open[deal.open_time], TradeSide.Open))
+            open_signals_time.append(deal.open_time)
+            open_signals_price.append(self._data.open[deal.open_time])
             if deal.close_time is not None:
-                signals.append((deal.close_time, self._data.open[deal.close_time], TradeSide.Close))
-        signal_x = []
-        signal_y = []
-        colors = []
-        for signal in signals:
-            x = self._data.row[signal[0]] - 0.5
-            self.signal_x.append(x)
-            signal_x.append(x)
-            signal_y.append(signal[1])
-            if signal[2] == TradeSide.Open:
-                colors.append("r")
-            else:
-                colors.append("g")
-        return self.ax.scatter(signal_x, signal_y, c=colors, marker=">")
+                close_signals_time.append(deal.close_time)
+                close_signals_price.append(self._data.open[deal.close_time])
+        open_signals = pd.Series(open_signals_price, index=open_signals_time)
+        close_signals = pd.Series(close_signals_price, index=close_signals_time)
+        return [ self.plot_signals(open_signals, "r", ">"), self.plot_signals(close_signals, "g", ">") ]
 
     def plot_deals(self, deals):
         data = []
@@ -265,9 +269,15 @@ class CandleWidget(SliderAxesWidget):
         fmt = slider_strtime_format(delta)
         ## @note 字符串太长会引起闪烁
         index = int(index) - 1
-        return "[dt=%s o=%.2f c=%.2f h=%.2f l=%.2f]" % (
+        time = self._data.index[index]
+        return "[index=%s, dt=%s, o=%.2f, c=%.2f, h=%.2f, l=%.2f, sma10=%s, sma60=%s, signal=%s]" % (
+                index,
                 self._data.index[index].strftime(fmt),
                 self._data['open'][index],
                 self._data['close'][index],
                 self._data['high'][index],
-                self._data['low'][index])
+                self._data['low'][index],
+                self._indicators['SMA10'][time],
+                self._indicators['SMA60'][time],
+                self._indicators['SMA10'][time] - self._indicators['SMA60'][time]
+                )

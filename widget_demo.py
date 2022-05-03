@@ -1,7 +1,7 @@
 '''
 Author: your name
 Date: 2022-02-19 20:32:30
-LastEditTime: 2022-03-06 16:52:46
+LastEditTime: 2022-03-13 09:01:01
 LastEditors: Please set LastEditors
 Description: 打开koroFileHeader查看配置 进行设置: https://github.com/OBKoro1/koro1FileHeader/wiki/%E9%85%8D%E7%BD%AE
 FilePath: /machine-learning/ml/simple_demo.py
@@ -25,7 +25,7 @@ import pandas as pd
 
 init_loggers()
 
-price_data = pd.read_csv("./test.csv", index_col=0, parse_dates=True)
+price_data = pd.read_csv("./test.csv", index_col=0, parse_dates=True)[0: 100]
 
 #  tradeBar.Open = csv[1].ToDecimal() * _scaleFactor;
 #             tradeBar.High = csv[2].ToDecimal() * _scaleFactor;
@@ -90,15 +90,16 @@ def candle_widget_demo():
     axes = []
     axes.append(plt.subplot2grid((5, 1), (0, 0), rowspan=4))
     axes.append(plt.subplot2grid((5, 1), (4, 0)))
-    widget_size = len(price_data)
+    data = price_data[0: 100]
+    widget_size = len(data)
     window_size = 50
 
-    candle_widget = CandleWidget(price_data, axes[0], "test", widget_size, window_size)
+    candle_widget = CandleWidget(data, axes[0], "test", widget_size, window_size)
     candle_widget.plot_candle()
 
 
     mainwindow = MultiWidgetsFrame(fig, "multi", widget_size, window_size)
-    mainwindow.create_slider(axes[1], price_data.index)
+    mainwindow.create_slider(axes[1], data.index)
     mainwindow.add_widget(candle_widget)
 
 
@@ -106,7 +107,7 @@ def candle_widget_demo():
     bigger_picture_ax = mainwindow.add_axes(
         slider_pos.x0, slider_pos.y1, slider_pos.width, 0.4,
         zorder = 1000, frameon=False, alpha = 1)
-    bigger_picture_ax.plot(price_data.close.values)
+    bigger_picture_ax.plot(data.close.values)
     bigger_picture = AxesWidget(bigger_picture_ax, "bigger_picture")                                        
 
     mainwindow.add_widget(bigger_picture)
@@ -116,34 +117,32 @@ def candle_widget_demo():
 def technical_widget_demo():
     fig = plt.figure()
     window_size = 50
-    widget_size = len(price_data)
-
+    data = price_data[0: 100]
+    widget_size = len(data)
     frame = TechnicalFrame(fig, widget_size, window_size)
-    frame.load_data(price_data)
+    frame.set_data(data)
     axes = frame.init_layout()
 
-    candle_widget = CandleWidget(price_data, axes[0], "candle_widget", widget_size, window_size)
+    candle_widget = CandleWidget(data, axes[0], "candle_widget", widget_size, window_size)
     volume_widget = SliderAxesWidget(axes[1], "subwidget2", widget_size, window_size)
 
     # 绘制第一个窗口
-    candle_widget.plot_line(price_data.close.values, "black", lw=1)
+    # candle_widget.plot_line(data.close.values, "black", lw=1, name="close")
     candle_widget.plot_candle()
 
     deals = []
-    signals = []
-    open_time = price_data.index[-12]
-    for close_time in price_data.index[-10: -1]:
-        signals.append((close_time, price_data.high[close_time], "buy"))
-        deal = Deal(Direction.Long, price_data.close[open_time], price_data.close[close_time],
+    open_time = data.index[-12]
+    for close_time in data.index[-10: -1]:
+        deal = Deal(Direction.Long, data.close[open_time], data.close[close_time],
             open_time, close_time, 1, 1
         )
         deals.append(deal)
     
-    candle_widget.plot_signals(signals)
+    candle_widget.plot_trades(deals)
     candle_widget.plot_deals(deals)
 
     # 绘制第2个窗口
-    volume_plotter = Volume(price_data.open, price_data.close, price_data.volume)
+    volume_plotter = Volume(data.open, data.close, data.volume)
     volume_plotter.plot(axes[1])
     volume_widget.add_plotter(volume_plotter, False)
 
