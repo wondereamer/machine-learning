@@ -99,8 +99,8 @@ class QCWidget(object):
 
 widget = QCWidget()
 name = "equity.usa.spy-minute"
-data_path = '/Users/wdj/Work/Lean-master/Data'
-result_path = '/Users/wdj/Work/Lean-master/Launcher/bin/Debug'
-file_path = os.path.join(result_path, "CustomIndicatorAlgorithm.json")
+data_path = '/Users/wdj/Work/Lean/Data'
+result_path = '/Users/wdj/Work/Lean/Launcher/bin/Debug'
+file_path = os.path.join(result_path, "wdjCustomIndicatorAlgorithm.json")
 widget.load_result(file_path, "TradeBar")
 widget.create_widgets()

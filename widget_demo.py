@@ -1,7 +1,7 @@
 '''
 Author: your name
 Date: 2022-02-19 20:32:30
-LastEditTime: 2022-03-13 09:01:01
+LastEditTime: 2022-05-03 16:46:12
 LastEditors: Please set LastEditors
 Description: 打开koroFileHeader查看配置 进行设置: https://github.com/OBKoro1/koro1FileHeader/wiki/%E9%85%8D%E7%BD%AE
 FilePath: /machine-learning/ml/simple_demo.py
@@ -151,7 +151,7 @@ def technical_widget_demo():
     frame.show()
 
 
-#axes_widget_demo()
-#candle_widget_demo()
-#slider_simple_demo()
-technical_widget_demo()
+axes_widget_demo()
+# candle_widget_demo()
+# slider_simple_demo()
+# technical_widget_demo()

@@ -1,2 +1,8 @@
 *.pyc
 *.log
+*.DS_Store
+tests/data/write_qc_data.zip
+20131010_trade.zip
+20131010_quote.zip
+tests/data/equity
+profile.py

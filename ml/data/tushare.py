@@ -1,7 +1,7 @@
 '''
 Author: your name
 Date: 2022-04-13 22:20:30
-LastEditTime: 2022-05-03 16:20:48
+LastEditTime: 2022-05-03 16:40:13
 LastEditors: Please set LastEditors
 Description: 打开koroFileHeader查看配置 进行设置: https://github.com/OBKoro1/koro1FileHeader/wiki/%E9%85%8D%E7%BD%AE
 FilePath: /machine-learning/tushare_demo.py
@@ -15,7 +15,10 @@ import tushare as ts
 import pandas as pd
 
 from ml.log import dlog as log
+from ml.log import init_loggers
 import ml.data.util as datautil
+
+init_loggers()
 
 
 pro = None
@@ -213,7 +216,7 @@ class EquityData(object):
             datautil.write_qc_dta(code_path, data)
 
             new_data_length.append(len(new_data))
-            log.info("new data length: %s" % new_data_length)
+            log.info("%s's new data length: %s" % (code, new_data_length))
 
         return new_data_length
 
@@ -252,5 +255,5 @@ def update_tushare_data(token, data_path, exchanges):
         ts_date = time_to_tushare_date(datetime.now())
         log.info("*" * 30)
         log.info("update exhange: %s" % exchange)
-        sz_update_num = stock.update_data_by_exchange(exchange, ts_date, Resolution.Day)
-        log.info("detail: %s" % sz_update_num)
+        update_num = stock.update_data_by_exchange(exchange, ts_date, Resolution.Day)
+        log.info("detail: %s" % update_num)
