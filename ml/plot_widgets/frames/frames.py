@@ -7,9 +7,9 @@ from matplotlib.widgets import RadioButtons
 import matplotlib.pyplot as plt
 import numpy as np
 
-from ml.plot_widgets.base_widget import BaseFigureFrame
-from ml.plot_widgets.frame_widget import CandleWidget, SliderAxesWidget, BirdsEyeWidget
-from ml.plot_widgets.slider_widget import Slider, TimeSliderFormatter
+from ml.plot_widgets.base import BaseFigureFrame
+from ml.plot_widgets.widgets.widgets import CandleWidget, SliderAxesWidget, BirdsEyeWidget
+from ml.plot_widgets.widgets.slider_widget import Slider, TimeSliderFormatter
 from ml.plot_widgets.formater import TimeFormatter
 from ml.log import wlog as log
 

@@ -1,8 +1,8 @@
 '''
 Author: your name
 Date: 2022-02-19 20:32:30
-LastEditTime: 2022-05-03 16:46:12
-LastEditors: Please set LastEditors
+LastEditTime: 2022-06-03 11:00:50
+LastEditors: wondereamer wells7.wong@gmail.com
 Description: 打开koroFileHeader查看配置 进行设置: https://github.com/OBKoro1/koro1FileHeader/wiki/%E9%85%8D%E7%BD%AE
 FilePath: /machine-learning/ml/simple_demo.py
 '''
@@ -10,17 +10,18 @@ import sys
 import os
 path2 = os.path.dirname(__file__)
 sys.path.append(path2)
+sys.path.append('/Users/wdj/Work/banana')
 from json.tool import main
 import six
 import matplotlib
 matplotlib.use('TkAgg')
 import matplotlib.pyplot as plt
 from matplotlib.ticker import Formatter
-from ml.plot_widgets.technical_widget import TechnicalFrame, MultiWidgetsFrame
-from ml.plot_widgets.frame_widget import AxesWidget, SliderAxesWidget, CandleWidget
-from ml.plot_widgets.plotter import SliderPlotter, Volume
+from ml.plot_widgets.frames import TechnicalFrame, MultiWidgetsFrame
+from ml.plot_widgets.widgets.widgets import AxesWidget, SliderAxesWidget, CandleWidget
+from ml.plot_widgets.plotters.plotter import SliderPlotter, Volume
 from ml.log import wlog, init_loggers
-from ml.finance.datastruct import Deal, Direction
+from banana.dstruct.order import Deal, Direction
 import pandas as pd
 
 init_loggers()

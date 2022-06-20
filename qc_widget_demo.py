@@ -1,8 +1,8 @@
 '''
 Author: wondereamer
 Date: 2022-03-05 21:18:04
-LastEditTime: 2022-03-13 12:29:28
-LastEditors: Please set LastEditors
+LastEditTime: 2022-06-03 11:03:39
+LastEditors: wondereamer wells7.wong@gmail.com
 Description: 打开koroFileHeader查看配置 进行设置: https://github.com/OBKoro1/koro1FileHeader/wiki/%E9%85%8D%E7%BD%AE
 FilePath: /machine-learning/qc_widget_demo.py
 '''
@@ -10,22 +10,23 @@ import sys
 import os
 path2 = os.path.dirname(__file__)
 sys.path.append(path2)
+sys.path.append('/Users/wdj/Work/banana')
 from json.tool import main
 import six
 import matplotlib
 matplotlib.use('TkAgg')
 import matplotlib.pyplot as plt
 from matplotlib.ticker import Formatter
-from ml.plot_widgets.technical_widget import TechnicalFrame
-from ml.plot_widgets.frame_widget import SliderAxesWidget, CandleWidget
-from ml.plot_widgets.plotter import Volume
+from ml.plot_widgets.frames import TechnicalFrame
+from ml.plot_widgets.widgets.widgets import SliderAxesWidget, CandleWidget
+from ml.plot_widgets.plotters.plotter import Volume
 from ml.log import init_loggers
 from ml.finance.datastruct import Deal, Direction
-from ml.data import qc
 from ml.util import util
 from ml.finance import analysis
 from ml.log import wlog as log
 import pandas as pd
+from banana.data import qc
 
 init_loggers()
 

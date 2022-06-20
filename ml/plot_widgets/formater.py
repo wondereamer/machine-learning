@@ -1,8 +1,8 @@
 '''
 Author: your name
 Date: 2022-02-19 17:15:25
-LastEditTime: 2022-02-19 17:15:25
-LastEditors: Please set LastEditors
+LastEditTime: 2022-06-06 09:26:23
+LastEditors: wondereamer wells7.wong@gmail.com
 Description: 打开koroFileHeader查看配置 进行设置: https://github.com/OBKoro1/koro1FileHeader/wiki/%E9%85%8D%E7%BD%AE
 
 FilePath: /machine-learning/ml/widgets/formater.py

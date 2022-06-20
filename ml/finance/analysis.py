@@ -1,13 +1,13 @@
 '''
 Author: your name
 Date: 2022-03-02 08:19:47
-LastEditTime: 2022-03-05 19:51:27
-LastEditors: Please set LastEditors
+LastEditTime: 2022-06-07 13:43:05
+LastEditors: wondereamer wells7.wong@gmail.com
 Description: 打开koroFileHeader查看配置 进行设置: https://github.com/OBKoro1/koro1FileHeader/wiki/%E9%85%8D%E7%BD%AE
 FilePath: /machine-learning/ml/finance/analysis.py
 '''
 from typing import List
-from ml.finance.datastruct import Deal, Direction, OrderStatus, TradeSide, Order
+from banana.dstruct.order import Deal, Direction, OrderStatus, TradeSide, Order
 
 def orders_to_deals(orders: List[Order]):
     """ 根据交易明细计算开平仓对。 
