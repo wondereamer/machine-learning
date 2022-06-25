@@ -24,11 +24,6 @@ class PlotterInfo(object):
         pass
 
 
-class JumpUnit(Enum):
-    Period = 1
-    Signal = 2
-    Day = 3
-
 class MultiWidgetsFrame(BaseFigureFrame):
     def __init__(self, fig, name, widget_size, window_size, parent=None):
         """ 多窗口联动控件。
@@ -111,146 +106,23 @@ class MultiWidgetsFrame(BaseFigureFrame):
         self._fig.canvas.draw()
         # elif event.key == u"super+up":
 
+        if event.key == u"down":
+            middle = (self.window_left + self.window_right) / 2
+            self.window_left =  max(1, int(middle - self.window_size))
+            self.window_size = min(self.widget_size, self._window_size * 2)
+
+        elif event.key == u"up" :
+            middle = (self.window_left + self.window_right) / 2
+            self.window_size = min(self.widget_size, int(self._window_size / 2))
+            self.window_left =  max(1, int(middle - self.window_size/2))
+
     def on_slider(self, event):
         self.update_window_position(event.position)
         event.canvas.draw()
 
 
-class MoveUnit(object):
-    def __init__(self, tech_frame):
-        self._tech_frame = tech_frame
-        self._jump_unit = JumpUnit.Period
-        self._signal_index = 0
-        self._next_ndata = 10
+    def update_window_position(self, window_left_position):
+        super().update_window_position(window_left_position)
+        for subwidget in self._child_widgets:
+            subwidget.update_window_postion(window_left_position)
 
-    def _next_signal_x(self, signals, window_size):
-        self._signal_index = min(len(signals)-1, self._signal_index+1)
-        pos = signals[self._signal_index] - window_size / 2
-        log.debug("next_signal: %s" % signals[self._signal_index])
-        return pos
-
-    def _previous_signal_x(self, signals, window_size):
-        self._signal_index = max(self._signal_index-1, 0)
-        pos = signals[self._signal_index] - window_size / 2
-        log.debug("previous_signal: %s" % signals[self._signal_index])
-        return pos
-
-    def get_window_position(self, window_left, key):
-        candle = self._tech_frame.get_candle_widget()
-        window_size = candle.window_size
-        widget_size = candle.widget_size
-        pos = None
-        if key == 'left':
-            if self._jump_unit == JumpUnit.Period:
-                pos =  max(window_left - self._next_ndata, 0)
-            elif self._jump_unit == JumpUnit.Signal:
-                pos = self._previous_signal_x(candle.signal_x, window_size)
-            else:
-                raise Exception("error")
-        elif key == 'right':
-            if self._jump_unit == JumpUnit.Period:
-                pos = min(window_left + self._next_ndata, widget_size)
-            elif self._jump_unit == JumpUnit.Signal:
-                pos = self._next_signal_x(candle.signal_x, window_size)
-            else:
-                raise Exception("error")
-        return pos
-
-    def create_jump_widget(self, slider_pos):
-        axcolor = 'lightgoldenrodyellow'
-        width = 0.1
-        span = 0.01
-        rax = plt.axes([slider_pos.x0-width-span, slider_pos.y0, width, slider_pos.y1 - slider_pos.y0], facecolor=axcolor)
-        self._radio = RadioButtons(rax, (JumpUnit.Period.name, JumpUnit.Signal.name))
-        def set_jum_unit(unit):
-            if unit == JumpUnit.Period.name:
-                self._jump_unit = JumpUnit.Period
-            elif unit == JumpUnit.Signal.name:
-                self._jump_unit = JumpUnit.Signal
-        self._radio.on_clicked(set_jum_unit)
-
-
-class TechnicalFrame(MultiWidgetsFrame):
-    """ 多窗口控件 """
-    def __init__(self, fig, widget_size:int, window_size:int, parent=None):
-        """ 多窗口联动控件。
-
-        Args:
-            fig (Figure): matplotlib绘图容器。
-            data (DataFrame): [open, close, high, low]数据表。
-        """
-        MultiWidgetsFrame.__init__(self, fig, "TechnicalFrame", widget_size, window_size, parent)
-        self._cursor = None
-        self._cursor_axes_index = { }
-        self._user_axes = []
-        self._move_unit = MoveUnit(self)
-
-    def set_data(self, data):
-        log.info("Load data with size: {0}".format(len(data)))
-        self._data = data
-        self.window_left = self.widget_size - self.window_size
-        log.info("Set window to display latest data, with index: %s" % (self.window_left))
-
-    def get_candle_widget(self):
-        for widget in self._child_widgets:
-            if isinstance(widget, CandleWidget):
-                return widget
-
-    def set_layout(self):
-        """ 设置窗口布局
-
-        Returns:
-            [ax]: axes数组
-        """
-        # 显示最后一个窗口的数据
-        self._user_axes.append(self.plot.subplot2grid((30, 1), (0, 0), rowspan=12))
-        self._user_axes.append(self.plot.subplot2grid((30, 1), (15, 0), rowspan=9))
-        slider_axes = self.plot.subplot2grid((30, 1), (25, 0), rowspan=5)
-        self.create_slider(slider_axes, self._data.index)
-        return self._user_axes
-
-    def plot_text(self, ith_ax, x, y, text, color='black', size=10, rotation=0):
-        self.axes[ith_ax].text(x, y, text, color=color, fontsize=size, rotation=rotation)
-
-    def on_leave_axes(self, event):
-        event.canvas.draw()
-
-    def _draw_widgets(self):
-        """ 显示控件 """
-        self._user_axes[0].grid(True)
-        self._user_axes[1].set_xticklabels([])
-        self._slider.ax.xaxis.set_major_formatter(TimeFormatter(self._data.index, fmt='%Y-%m-%d'))
-        self._cursor = MultiCursor(self._fig.canvas,
-                                    self._user_axes,
-                                    color='r', lw=2, horizOn=True,
-                                    vertOn=True)
-        self._create_birds_eve_widget()
-        self._move_unit.create_jump_widget(self.slider.ax.get_position())
-        self._init_subwidges_window_position()
-
-    def on_key_release(self, event):
-        log.debug("key pressed event: '%s'" % event.key)
-        if event.key in [u"down", u"up"]:
-            MultiWidgetsFrame.on_key_release(self, event)
-            return
-
-        if event.key in ['left', 'right']:
-            signal_pos = self._move_unit.get_window_position(self.window_left, event.key)
-            self.update_window_position(signal_pos)
-            for subwidget in self._child_widgets:
-                subwidget.set_window_postion(signal_pos)
-            self._fig.canvas.draw()
-
-        log.debug("+" * 30)
-        log.debug(self._child_widgets[0].window_left)
-        log.debug(self.window_left)
-
-    def _create_birds_eve_widget(self):
-        slider_pos = self.slider.ax.get_position()
-        bigger_picture_ax = self.add_axes(
-            slider_pos.x0, slider_pos.y1, slider_pos.width, 0.4,
-            zorder = 1000, frameon=False, alpha = 0.1)
-
-        self.bigger_picture = BirdsEyeWidget(
-            self._data, bigger_picture_ax, "bigger_picture",
-            self.widget_size, self.window_size, self)

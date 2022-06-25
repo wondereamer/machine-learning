@@ -1,7 +1,7 @@
 '''
 Author: your name
 Date: 2022-02-12 08:05:30
-LastEditTime: 2022-06-25 09:15:41
+LastEditTime: 2022-06-25 10:41:22
 LastEditors: wondereamer wells7.wong@gmail.com
 Description: 打开koroFileHeader查看配置 进行设置: https://github.com/OBKoro1/koro1FileHeader/wiki/%E9%85%8D%E7%BD%AE
 FilePath: /machine-learning/ml/widgets/fame_widgets.py
@@ -41,12 +41,10 @@ class PlotterWidget(BaseAxesWidget):
         """ 添加并绘制, 不允许重名的plotter """
         if plotter.name in self.plotters:
             raise
-        self.plotters[plotter.name] = plotter
         if twinx:
             self.twinx_plotters.add(plotter)
-
-    def add_plot(self, plot, name):
-        self.plotters[name] = plot
+        else:
+            self.plotters[plotter.name] = plotter
 
     def on_button_press(self, event):
         pass
@@ -75,13 +73,10 @@ class Widget(PlotterWidget):
         for plotter in self.plotters.values():
             plotter.on_slider(event)
         if event.name in [ MouseMotionEvent, ButtonPressEvent ]:
-            self._update_window(event.position)
+            self.update_window_position(event.position)
 
-    def set_window_postion(self, left):
-        self._update_window(left)
-
-    def _update_window(self, left):
-        self.update_window_position(left)
+    def update_window_postion(self, left):
+        super().update_window_position(left)
         self.update_plotter_xylim(self.window_left, self.window_right)
 
     def update_plotter_xylim(self, w_left, w_right):
@@ -183,8 +178,8 @@ class CandleWidget(Widget):
         # 默认共用axes, 绕过了窗口设置
         ax = self.ax
         line = SliderPlotter(ax, name, data, data)
-        plot = line.ax.plot(data, *args, **kwargs)
-        self.add_plotter(line, False)
+        plot = line.ax.twinx().plot(data, *args, **kwargs)
+        self.add_plotter(line, True)
         return plot
 
     def plot_indicators(self, indicators: List[Dict]):

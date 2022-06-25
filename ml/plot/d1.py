@@ -1,3 +1,11 @@
+'''
+Author: wondereamer wells7.wong@gmail.com
+Date: 2020-09-05 11:16:38
+LastEditors: wondereamer wells7.wong@gmail.com
+LastEditTime: 2022-06-25 10:30:27
+FilePath: /Lean/Users/wdj/Work/machine-learning/ml/plot/d1.py
+Description: 这是默认设置,请设置`customMade`, 打开koroFileHeader查看配置 进行设置: https://github.com/OBKoro1/koro1FileHeader/wiki/%E9%85%8D%E7%BD%AE
+'''
 import numpy as np
 import matplotlib.pyplot as plt
 
@@ -24,6 +32,7 @@ def plot_hist(x1, num_bins, y=None):
      hist(axes[0], x1, num_bins)
      axes[1].plot(x1, "ro--")
      axes[1].plot(np.sort(x1))
+     axes[1].twinx().plot(range(0, 10000), range(0, 10000))
      plt.show()
 
 
