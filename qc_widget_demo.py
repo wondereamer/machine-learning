@@ -18,7 +18,7 @@ matplotlib.use('TkAgg')
 import matplotlib.pyplot as plt
 from matplotlib.ticker import Formatter
 from ml.plot_widgets.frames import TechnicalFrame
-from ml.plot_widgets.widgets.widgets import SliderAxesWidget, CandleWidget
+from ml.plot_widgets.widgets.widgets import Widget, CandleWidget
 from ml.plot_widgets.plotters.plotter import Volume
 from ml.log import init_loggers
 from ml.finance.datastruct import Deal, Direction
@@ -73,7 +73,7 @@ class QCWidget(object):
         axes = frame.init_layout()
 
         candle_widget = CandleWidget(self.price_data, axes[0], "candle_widget", widget_size, window_size)
-        volume_widget = SliderAxesWidget(axes[1], "volume_widget", widget_size, window_size)
+        volume_widget = Widget(axes[1], "volume_widget", widget_size, window_size)
 
         # 绘制第一个窗口
         candle_widget.plot_candle()

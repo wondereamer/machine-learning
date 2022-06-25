@@ -8,7 +8,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 
 from ml.plot_widgets.base import BaseFigureFrame
-from ml.plot_widgets.widgets.widgets import CandleWidget, SliderAxesWidget, BirdsEyeWidget
+from ml.plot_widgets.widgets.widgets import CandleWidget, Widget, BirdsEyeWidget
 from ml.plot_widgets.widgets.slider_widget import Slider, TimeSliderFormatter
 from ml.plot_widgets.formater import TimeFormatter
 from ml.log import wlog as log
@@ -61,7 +61,7 @@ class MultiWidgetsFrame(BaseFigureFrame):
         #         plotter.ax.format_coord = self._format_coord
                 # self.axes.append(plotter.ax)
         self._child_widgets.append(widget)
-        if isinstance(widget, SliderAxesWidget):
+        if isinstance(widget, Widget):
             if self._slider is None:
                 log.warn("Slider should be create before adding widget.")
             else:
@@ -72,11 +72,9 @@ class MultiWidgetsFrame(BaseFigureFrame):
         formatter = TimeSliderFormatter(index)
         slider = Slider(slider_axes, "slider", self.widget_size, self.window_size,
             self, '', 0, self.widget_size-1, formatter, self.widget_size-1, self.widget_size/50, "%d", index)
-        self.set_slider(slider)
-        return self._slider
-
-    def set_slider(self, slider):
         self._slider = slider
+        self._slider.add_observer(self.on_slider)
+        return self._slider
 
     def tight_layout(self):
         # https://matplotlib.org/stable/tutorials/intermediate/tight_layout_guide.html
@@ -98,10 +96,10 @@ class MultiWidgetsFrame(BaseFigureFrame):
     def _init_subwidges_window_position(self):
         self.window_left = 1
         for subwidget in self._child_widgets:
-            if not isinstance(subwidget, SliderAxesWidget):
+            if not isinstance(subwidget, Widget):
                 continue
             try:
-                subwidget.set_window_interval(subwidget.window_left, subwidget.window_right)
+                subwidget.update_plotter_xylim(subwidget.window_left, subwidget.window_right)
             except Exception as e:
                 raise Exception("设置窗口位置失败 %s" % subwidget.name)
 
@@ -114,9 +112,8 @@ class MultiWidgetsFrame(BaseFigureFrame):
         # elif event.key == u"super+up":
 
     def on_slider(self, event):
-        """ 滑块事件处理。 """
+        self.update_window_position(event.position)
         event.canvas.draw()
-
 
 
 class MoveUnit(object):
@@ -127,33 +124,34 @@ class MoveUnit(object):
         self._next_ndata = 10
 
     def _next_signal_x(self, signals, window_size):
-        log.debug(signals)
-        log.debug("next_signal")
-        self._signal_index = min(len(signals), self._signal_index + 1)
-        pos = signals[0] - window_size / 2
+        self._signal_index = min(len(signals)-1, self._signal_index+1)
+        pos = signals[self._signal_index] - window_size / 2
+        log.debug("next_signal: %s" % signals[self._signal_index])
         return pos
 
     def _previous_signal_x(self, signals, window_size):
-        log.debug("previous_signal")
-        self._signal_index = max(0, self._signal_index - 1)
-        pos = signals[0] - window_size / 2
+        self._signal_index = max(self._signal_index-1, 0)
+        pos = signals[self._signal_index] - window_size / 2
+        log.debug("previous_signal: %s" % signals[self._signal_index])
         return pos
 
-    def change_window_position(self, subwidget, key):
+    def get_window_position(self, window_left, key):
         candle = self._tech_frame.get_candle_widget()
+        window_size = candle.window_size
+        widget_size = candle.widget_size
         pos = None
         if key == 'left':
             if self._jump_unit == JumpUnit.Period:
-                pos =  max(subwidget.window_left - self._next_ndata, 0)
+                pos =  max(window_left - self._next_ndata, 0)
             elif self._jump_unit == JumpUnit.Signal:
-                pos = self._next_signal_x(candle.signal_x, candle.window_size)
+                pos = self._previous_signal_x(candle.signal_x, window_size)
             else:
                 raise Exception("error")
-        else:
+        elif key == 'right':
             if self._jump_unit == JumpUnit.Period:
-                pos = min(subwidget.window_left + self._next_ndata, subwidget.widget_size)
+                pos = min(window_left + self._next_ndata, widget_size)
             elif self._jump_unit == JumpUnit.Signal:
-                pos = self._previous_signal_x(candle.signal_x, candle.window_size)
+                pos = self._next_signal_x(candle.signal_x, window_size)
             else:
                 raise Exception("error")
         return pos
@@ -198,8 +196,8 @@ class TechnicalFrame(MultiWidgetsFrame):
             if isinstance(widget, CandleWidget):
                 return widget
 
-    def init_layout(self):
-        """ 初始化窗口布局
+    def set_layout(self):
+        """ 设置窗口布局
 
         Returns:
             [ax]: axes数组
@@ -211,7 +209,7 @@ class TechnicalFrame(MultiWidgetsFrame):
         self.create_slider(slider_axes, self._data.index)
         return self._user_axes
 
-    def plot_text(self, name, ith_ax, x, y, text, color='black', size=10, rotation=0):
+    def plot_text(self, ith_ax, x, y, text, color='black', size=10, rotation=0):
         self.axes[ith_ax].text(x, y, text, color=color, fontsize=size, rotation=rotation)
 
     def on_leave_axes(self, event):
@@ -236,18 +234,16 @@ class TechnicalFrame(MultiWidgetsFrame):
             MultiWidgetsFrame.on_key_release(self, event)
             return
 
-        if event.key == 'left':
+        if event.key in ['left', 'right']:
+            signal_pos = self._move_unit.get_window_position(self.window_left, event.key)
+            self.update_window_position(signal_pos)
             for subwidget in self._child_widgets:
-                subwidget.set_window_postion(
-                    self._move_unit.change_window_position(subwidget, 'left')
-                )
+                subwidget.set_window_postion(signal_pos)
             self._fig.canvas.draw()
-        elif event.key == 'right':
-            for subwidget in self._child_widgets:
-                subwidget.set_window_postion(
-                    self._move_unit.change_window_position(subwidget, 'right')
-                )
-            self._fig.canvas.draw()
+
+        log.debug("+" * 30)
+        log.debug(self._child_widgets[0].window_left)
+        log.debug(self.window_left)
 
     def _create_birds_eve_widget(self):
         slider_pos = self.slider.ax.get_position()

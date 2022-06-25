@@ -1,7 +1,7 @@
 '''
 Author: your name
 Date: 2022-02-12 08:05:30
-LastEditTime: 2022-06-20 08:24:48
+LastEditTime: 2022-06-25 09:15:41
 LastEditors: wondereamer wells7.wong@gmail.com
 Description: 打开koroFileHeader查看配置 进行设置: https://github.com/OBKoro1/koro1FileHeader/wiki/%E9%85%8D%E7%BD%AE
 FilePath: /machine-learning/ml/widgets/fame_widgets.py
@@ -29,13 +29,12 @@ def cursor_strtime_format(delta):
     else:
         return '%H:%M'
 
-class AxesWidget(BaseAxesWidget):
+class PlotterWidget(BaseAxesWidget):
     """
     """
     def __init__(self, ax, name, widget_size=None, window_size=None, parent=None):
         BaseAxesWidget.__init__(self, ax, name, widget_size, window_size, parent)
         self.plotters = { }
-        self.ax = ax
         self.twinx_plotters = set()
 
     def add_plotter(self, plotter, twinx):
@@ -62,17 +61,15 @@ class AxesWidget(BaseAxesWidget):
 #  twinx plotters --> 计算窗口
 
 
-class SliderAxesWidget(AxesWidget):
-    """ 带滑动事件响应支持的AxesWidget, 但本身不带滑块控件
+class Widget(PlotterWidget):
+    """ 带滑动事件响应支持的PlotterWidget, 但本身不带滑块控件
 
-    Args:
-        AxesWidget (AxesWidget): Axes窗口
     """
 
     def __init__(self, ax, name, widget_size, window_size, parent=None):
-        AxesWidget.__init__(self, ax, name, widget_size, window_size, parent)
+        PlotterWidget.__init__(self, ax, name, widget_size, window_size, parent)
         self.window_left = widget_size - window_size
-        self.set_window_interval(self.window_left, widget_size)
+        self.update_plotter_xylim(self.window_left, widget_size)
 
     def on_slider(self, event):
         for plotter in self.plotters.values():
@@ -85,12 +82,9 @@ class SliderAxesWidget(AxesWidget):
 
     def _update_window(self, left):
         self.update_window_position(left)
-        self.set_window_interval(self.window_left, self.window_right)
-        # log.debug("window_name: {3}, window_left: {0}, window_right: {1}, slider_pos: {2}".format(
-        #     self.window_left, self.window_right, left, self.name
-        # ))
+        self.update_plotter_xylim(self.window_left, self.window_right)
 
-    def set_window_interval(self, w_left, w_right):
+    def update_plotter_xylim(self, w_left, w_right):
         all_ymax = []
         all_ymin = []
         w_left = int(w_left)
@@ -120,7 +114,7 @@ class SliderAxesWidget(AxesWidget):
             middle = (self.window_left + self.window_right) / 2
             self.window_left =  max(1, int(middle - self.window_size))
             self.window_size = min(self.widget_size, self._window_size * 2)
-            self.set_window_interval(self.window_left, self.window_right)
+            self.update_plotter_xylim(self.window_left, self.window_right)
 
             middle = (self.window_left + self.window_right) / 2
             log.debug("window: ")
@@ -130,17 +124,17 @@ class SliderAxesWidget(AxesWidget):
             middle = (self.window_left + self.window_right) / 2
             self.window_size = min(self.widget_size, int(self._window_size / 2))
             self.window_left =  max(1, int(middle - self.window_size/2))
-            self.set_window_interval(self.window_left, self.window_right)
+            self.update_plotter_xylim(self.window_left, self.window_right)
 
             log.debug("window: ")
             middle = (self.window_left + self.window_right) / 2
             log.debug((self.window_left, middle, self.window_right, self.window_size))
 
 
-class BirdsEyeWidget(SliderAxesWidget):
+class BirdsEyeWidget(Widget):
 
     def __init__(self, price_data, ax, name, widget_size, window_size, parent=None):
-        SliderAxesWidget.__init__(self, ax, name, widget_size, window_size, parent)
+        Widget.__init__(self, ax, name, widget_size, window_size, parent)
         self._data = price_data
         self._plot_candle()
         self._slider_cursor = None
@@ -166,10 +160,10 @@ class BirdsEyeWidget(SliderAxesWidget):
             del self._slider_cursor
 
 
-class CandleWidget(SliderAxesWidget):
+class CandleWidget(Widget):
 
     def __init__(self, price_data, ax, name, widget_size, window_size, parent=None):
-        SliderAxesWidget.__init__(self, ax, name, widget_size, window_size, parent)
+        Widget.__init__(self, ax, name, widget_size, window_size, parent)
         self._data = price_data
         self._data['row'] = [i for i in range(0, len(self._data))]
         self.signal_x = []
@@ -212,6 +206,9 @@ class CandleWidget(SliderAxesWidget):
             signals[k] = self._data.open[k]
             color = 'r' if s == 1 else 'g'
             colors.append(color)
+            pos = self._data.index.searchsorted(k)
+            assert self._data.index[pos] == k
+            self.signal_x.append(pos)
         return self._plot_signals(signals, colors, ">")
 
     def plot_trades(self, trades):
@@ -226,7 +223,6 @@ class CandleWidget(SliderAxesWidget):
             data.append(p)
             colors.append("r" if trade.profit > 0 else "g")
         use_tuple = 0
-        log.debug(data)
         lines = LineCollection(data, colors=colors, linewidths=1, antialiaseds=use_tuple)
         return self.ax.add_collection(lines)
 

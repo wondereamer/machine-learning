@@ -1,8 +1,8 @@
 '''
 Author: your name
 Date: 2022-02-13 22:00:56
-LastEditTime: 2022-03-07 13:32:45
-LastEditors: Please set LastEditors
+LastEditTime: 2022-06-21 07:40:35
+LastEditors: wondereamer wells7.wong@gmail.com
 Description: 打开koroFileHeader查看配置 进行设置: https://github.com/OBKoro1/koro1FileHeader/wiki/%E9%85%8D%E7%BD%AE
 FilePath: /machine-learning/ml/widgets/base_widget.py
 '''
@@ -86,8 +86,8 @@ class BaseWidgetMixin(object):
     def connect_event_handlers(self):
         raise NotImplementedError
 
-    def update_window_position(self, position):
-        self.window_left = int(position)
+    def update_window_position(self, window_left_position):
+        self.window_left = int(window_left_position)
         if self.window_right >= self._widget_size:
             self.window_left = int(self.window_right - self._window_size)
 

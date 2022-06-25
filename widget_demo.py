@@ -18,7 +18,7 @@ matplotlib.use('TkAgg')
 import matplotlib.pyplot as plt
 from matplotlib.ticker import Formatter
 from ml.plot_widgets.frames import TechnicalFrame, MultiWidgetsFrame
-from ml.plot_widgets.widgets.widgets import AxesWidget, SliderAxesWidget, CandleWidget
+from ml.plot_widgets.widgets.widgets import AxesWidget, Widget, CandleWidget
 from ml.plot_widgets.plotters.plotter import SliderPlotter, Volume
 from ml.log import wlog, init_loggers
 from banana.dstruct.order import Deal, Direction
@@ -74,7 +74,7 @@ def slider_simple_demo():
     widget_size = len(price_data)
     window_size = 50
     # 创建子窗口 
-    widget = SliderAxesWidget(axes[0], "subwidget2", widget_size, window_size)
+    widget = Widget(axes[0], "subwidget2", widget_size, window_size)
     # 画线
     line = SliderPlotter(axes[0], "slider_plotter", price_data.close.values, price_data.close.values)
     line.ax.plot(price_data.close.values)
@@ -125,7 +125,7 @@ def technical_widget_demo():
     axes = frame.init_layout()
 
     candle_widget = CandleWidget(data, axes[0], "candle_widget", widget_size, window_size)
-    volume_widget = SliderAxesWidget(axes[1], "subwidget2", widget_size, window_size)
+    volume_widget = Widget(axes[1], "subwidget2", widget_size, window_size)
 
     # 绘制第一个窗口
     # candle_widget.plot_line(data.close.values, "black", lw=1, name="close")
