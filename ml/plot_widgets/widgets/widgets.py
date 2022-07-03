@@ -1,18 +1,19 @@
 '''
 Author: your name
 Date: 2022-02-12 08:05:30
-LastEditTime: 2022-06-25 10:41:22
+LastEditTime: 2022-07-03 11:52:16
 LastEditors: wondereamer wells7.wong@gmail.com
 Description: 打开koroFileHeader查看配置 进行设置: https://github.com/OBKoro1/koro1FileHeader/wiki/%E9%85%8D%E7%BD%AE
 FilePath: /machine-learning/ml/widgets/fame_widgets.py
 '''
 import matplotlib.pyplot as plt
 import pandas as pd
+import math
 from matplotlib.collections import LineCollection
 from matplotlib.widgets import MultiCursor
 
 from typing import List, Dict
-from ml.plot_widgets.plotters.plotter import Candles, SliderPlotter
+from ml.plot_widgets.plotters.plotter import Candles, LinePlotter, SliderPlotter
 from ml.plot_widgets.base import BaseAxesWidget
 from ml.plot_widgets.formater import TimeFormatter
 from ml.plot_widgets.events import MouseMotionEvent, ButtonPressEvent
@@ -37,11 +38,11 @@ class PlotterWidget(BaseAxesWidget):
         self.plotters = { }
         self.twinx_plotters = set()
 
-    def add_plotter(self, plotter, twinx):
+    def add_plotter(self, plotter, update_xy_lim):
         """ 添加并绘制, 不允许重名的plotter """
         if plotter.name in self.plotters:
             raise
-        if twinx:
+        if not update_xy_lim:
             self.twinx_plotters.add(plotter)
         else:
             self.plotters[plotter.name] = plotter
@@ -91,9 +92,14 @@ class Widget(PlotterWidget):
                 # continue
             ymax, ymin = plotter.y_interval(w_left, w_right)
             ## @todo move ymax, ymin 计算到plot中去。
-            all_ymax.append(ymax)
-            all_ymin.append(ymin)
+            if not math.isnan(ymax):
+                all_ymax.append(ymax)
+            if not math.isnan(ymin):
+                all_ymin.append(ymin)
         if len(self.plotters) == 0:
+            return
+        if all_ymax == [] or all_ymin == []:
+            self.ax.set_xlim(w_left, w_right)
             return
         ymax = max(all_ymax)
         ymin = min(all_ymin)
@@ -163,32 +169,37 @@ class CandleWidget(Widget):
         self._data['row'] = [i for i in range(0, len(self._data))]
         self.signal_x = []
         self._indicators = {}
+        assert len(price_data) == widget_size
 
     def plot_candle(self):
         # only plot candle use plotter, avoid other plot invoking y_interval
         candles = Candles(self._data, 'candles')
         candles.plot(self.ax)
-        self.add_plotter(candles, False)
+        self.add_plotter(candles, True)
         delta = (self._data.index[1] - self._data.index[0])
         self.ax.xaxis.set_major_formatter(TimeFormatter(self._data.index, delta))
         self.ax.set_xticks(self._xticks_to_display(0, len(self._data), delta));
         self.ax.format_coord = self._format_coord
 
+    def _time_index_to_x(self, data):
+        return [self._data.row[t] for t in data.index] # TODO 优化，计算出初始偏移
+
     def plot_line(self, name, data, *args, **kwargs):
         # 默认共用axes, 绕过了窗口设置
         ax = self.ax
-        line = SliderPlotter(ax, name, data, data)
-        plot = line.ax.twinx().plot(data, *args, **kwargs)
-        self.add_plotter(line, True)
+        if len(data.index) != self.widget_size:
+            data = data.reindex(self._data.index)
+        line = LinePlotter(ax, data, data, name)
+        plot = line.plot(range(0, len(data)), data, True, *args, **kwargs)
+        self.add_plotter(line, False)
         return plot
 
     def plot_indicators(self, indicators: List[Dict]):
         for i, indic in enumerate(indicators):
             series: pd.Series = indic["values"]
-            y = series.values.tolist()
-            # TODO 优化，计算出初始偏移
-            x = [self._data.row[t] for t in series.index]
-            self.ax.plot(x, y)
+            if len(series.index) != self.widget_size:
+                series = series.reindex(self._data.index)
+            self.ax.plot(range(0, len(series)), series)
             self._indicators[indic["name"]] = series
 
     def _plot_signals(self, signals: pd.Series, color: str, marker: str, offset: float=-0.5):
@@ -262,3 +273,83 @@ class CandleWidget(Widget):
                 self._data['high'][index],
                 self._data['low'][index],
                 )
+
+class TechLimitWidget(Widget):
+
+    def __init__(self, index, ax, name,  window_size, parent=None):
+        Widget.__init__(self, ax, name, len(index), window_size, parent)
+        """ index: time series index """
+        self._index = index
+        self._data = pd.Series([i for i in range(0, len(index))], index=index)
+        self.line = None
+
+    def time_index_to_x(self, data: pd.Series):
+        return [self._data[t] for t in data.index] # TODO 优化，计算出初始偏移
+
+    def init_upper_lower(self, upper_lower):
+        if self.line is not None:
+            return
+        else:
+            log.warn("TechWidget is init already")
+        self.line = LinePlotter(self.ax, upper_lower, upper_lower, "")
+        self.add_plotter(self.line, True)
+
+    def plot_line(self, x, y, *args, **kwargs):
+        """
+
+        Args:
+            x ([int]): x axis
+            y ([float]): y_axis
+        """
+        self.line.plot(x, y, False, *args, **kwargs)
+
+
+class TechWidget(Widget):
+
+    def __init__(self, index, ax, name,  window_size, parent=None):
+        Widget.__init__(self, ax, name, len(index), window_size, parent)
+        """ index: time series index """
+        self._index = index
+        self._data = pd.Series([i for i in range(0, len(index))], index=index)
+
+    def time_index_to_x(self, data: pd.Series):
+        return [self._data[t] for t in data.index] # TODO 优化，计算出初始偏移
+
+    def plot_line(self, y, name, twinx, update_xy_lim, *args, **kwargs):
+        """
+
+        Args:
+            x ([int]): x axis
+            y ([float]): y_axis
+        """
+        if len(y) != self.widget_size:
+            y = y.reindex(self._index)
+        plotter = SliderPlotter(self.ax, name, y, y)
+        if twinx:
+            ax = self.ax.twinx()
+        else:
+            ax = self.ax
+        ax.plot(range(0, len(y)), y.values, *args, **kwargs)
+        self.add_plotter(plotter, update_xy_lim)
+
+    def plot_bar(self, y, name, twinx, update_xy_lim, *args, **kwargs):
+        if len(y) != self.widget_size:
+            y = y.reindex(self._index, fill_value=0)
+
+        plotter = SliderPlotter(self.ax, name, y, y)
+        if twinx:
+            ax = self.ax.twinx()
+        else:
+            ax = self.ax
+        colors = ['r' if v > 0 else 'g' for v in y]
+        ax.bar(range(0, len(y)), y.values, *args, color=colors, **kwargs)
+        self.add_plotter(plotter, update_xy_lim)
+
+    def plot_macd(self, indicator):
+        name = indicator["info"]["indicator"]
+        if "Fast" in indicator["info"]["indicator"]:
+            self.plot_line(indicator["values"], name, True, False, c="y")
+        elif "Slow" in indicator["info"]["indicator"]:
+            self.plot_line(indicator["values"], name, True, False, c="b")
+        else:
+            self.plot_bar(indicator["values"], "MACD.Signal", False, True)

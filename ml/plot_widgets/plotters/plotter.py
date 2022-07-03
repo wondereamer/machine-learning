@@ -1,8 +1,8 @@
 '''
 Author: your name
 Date: 2022-02-19 10:04:35
-LastEditTime: 2022-03-13 07:14:07
-LastEditors: Please set LastEditors
+LastEditTime: 2022-07-03 10:04:15
+LastEditors: wondereamer wells7.wong@gmail.com
 Description: 打开koroFileHeader查看配置 进行设置: https://github.com/OBKoro1/koro1FileHeader/wiki/%E9%85%8D%E7%BD%AE
 FilePath: /machine-learning/ml/widgets/plotter.py
 '''
@@ -23,6 +23,14 @@ class SliderPlotter(object):
     """
     """
     def __init__(self, ax, name, lower_data, upper_data):
+        """_summary_
+
+        Args:
+            ax (Axes): 
+            name (str): plotter name
+            lower_data (pd.Series): used to comppute lower of data
+            upper_data (pd.Series): used to comppute upper of data
+        """
         self.name = name
         self.ax = ax
         self.zorder = 0
@@ -36,12 +44,21 @@ class SliderPlotter(object):
         # @todo 只存储上下界, 每次缩放的时候计算一次, 在移动时候无需计算。
         if len(self._upper) == 2:
             # 就两个值，分别代表上下界。
-            return max(self._upper), min(self._lower)
+            ymax = max(self._upper)
+            ymin = min(self._upper)
+            print("*" * 30)
+            print(self.name, ymax, ymin)
+            print("*" * 30)
+            return ymax, ymin
         if w_right > len(self._upper) or w_right > len(self._lower):
             raise Exception("数据长度不一致导致，需要换算出对应的数据索引。plotter: %s, len: %s, w_right: %s, w_left: %s" \
                 % (self.name, len(self._upper), w_right, w_left))
-        ymax = np.max(self._upper[w_left: w_right])
-        ymin = np.min(self._lower[w_left: w_right])
+        ymax = np.nanmax(self._upper[w_left: w_right])
+        ymin = np.nanmin(self._lower[w_left: w_right])
+        print("*" * 30)
+        print("plotter y_interval")
+        print(self.name, ymax, ymin)
+        print("*" * 30)
         return ymax, ymin
 
     def plot(self, axes):
@@ -52,6 +69,19 @@ class SliderPlotter(object):
 
     def on_slider(self, event):
         pass
+
+
+class LinePlotter(SliderPlotter):
+    """ 柱状图。 """
+    def __init__(self, axes, upper, lower, name="Line"):
+        super(LinePlotter, self).__init__(axes, name, upper, lower)
+
+    def plot(self, x, y, twinx, *args, **kwargs):
+        if twinx:
+            ax = self.ax.twinx()
+        else:
+            ax = self.ax
+        ax.plot(x, y, *args, **kwargs)
 
 
 class Volume(SliderPlotter):

@@ -134,8 +134,8 @@ class TechnicalFrame(MultiWidgetsFrame):
         """ 显示控件 """
         self._user_axes[0].grid(True)
         self._user_axes[1].set_xticklabels([])
-        # self._user_axes[2].grid(True)
-        # self._user_axes[2].set_xticklabels([])
+        self._user_axes[2].grid(True)
+        self._user_axes[2].set_xticklabels([])
         self._slider.ax.xaxis.set_major_formatter(TimeFormatter(self._data.index, fmt='%Y-%m-%d'))
         self._cursor = MultiCursor(self._fig.canvas,
                                     self._user_axes,
