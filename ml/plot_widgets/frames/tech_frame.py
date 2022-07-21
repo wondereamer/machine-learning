@@ -84,7 +84,7 @@ class TechnicalFrame(MultiWidgetsFrame):
         MultiWidgetsFrame.__init__(self, fig, "TechnicalFrame", widget_size, window_size, parent)
         self._cursor = None
         self._cursor_axes_index = { }
-        self._user_axes = []
+        self._cursor_axes = []
         self._move_unit = MoveUnit(self)
 
     def set_data(self, data):
@@ -105,13 +105,12 @@ class TechnicalFrame(MultiWidgetsFrame):
             [ax]: axes数组
         """
         # 显示最后一个窗口的数据
-        self._user_axes.append(self.plot.subplot2grid((30, 1), (0, 0), rowspan=15))  # 0 -> 14
-        self._user_axes.append(self.plot.subplot2grid((30, 1), (15, 0), rowspan=4))  # 15 -> 19
-        self._user_axes.append(self.plot.subplot2grid((30, 1), (19, 0), rowspan=4))  # 20 -> 24
-        # self._user_axes[-1].plot(self._data['close'])
+        self._cursor_axes.append(self.plot.subplot2grid((30, 1), (0, 0), rowspan=15))  # 0 -> 14
+        self._cursor_axes.append(self.plot.subplot2grid((30, 1), (15, 0), rowspan=4))  # 15 -> 19
+        self._cursor_axes.append(self.plot.subplot2grid((30, 1), (19, 0), rowspan=4))  # 20 -> 24
         slider_axes = self.plot.subplot2grid((30, 1), (23, 0), rowspan=2) # 25 -> 30
         self.create_slider(slider_axes, self._data.index)
-        return self._user_axes
+        return self._cursor_axes
 
     def on_key_release(self, event):
         log.debug("key pressed event: '%s'" % event.key)
@@ -123,22 +122,24 @@ class TechnicalFrame(MultiWidgetsFrame):
             self.update_window_position(signal_pos)
             self._fig.canvas.draw()
 
-
     def plot_text(self, ith_ax, x, y, text, color='black', size=10, rotation=0):
         self.axes[ith_ax].text(x, y, text, color=color, fontsize=size, rotation=rotation)
 
     def on_leave_axes(self, event):
         event.canvas.draw()
 
+    def add_cursor_axes(self, axes):
+        self._cursor_axes.append(axes)
+
     def _draw_widgets(self):
         """ 显示控件 """
-        self._user_axes[0].grid(True)
-        self._user_axes[1].set_xticklabels([])
-        self._user_axes[2].grid(True)
-        self._user_axes[2].set_xticklabels([])
+        self._cursor_axes[0].grid(True)
+        self._cursor_axes[1].set_xticklabels([])
+        self._cursor_axes[2].grid(True)
+        self._cursor_axes[2].set_xticklabels([])
         self._slider.ax.xaxis.set_major_formatter(TimeFormatter(self._data.index, fmt='%Y-%m-%d'))
         self._cursor = MultiCursor(self._fig.canvas,
-                                    self._user_axes,
+                                    self._cursor_axes,
                                     color='r', lw=2, horizOn=True,
                                     vertOn=True)
         self._create_birds_eve_widget()

@@ -1,11 +1,5 @@
 # -*- coding: utf-8 -*-
-from json.tool import main
 from re import S
-from enum import Enum
-from matplotlib.widgets import MultiCursor
-from matplotlib.widgets import RadioButtons
-import matplotlib.pyplot as plt
-import numpy as np
 
 from ml.plot_widgets.base import BaseFigureFrame
 from ml.plot_widgets.widgets.widgets import CandleWidget, Widget, BirdsEyeWidget

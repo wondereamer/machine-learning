@@ -1,7 +1,7 @@
 '''
 Author: your name
 Date: 2022-02-19 10:04:35
-LastEditTime: 2022-07-03 10:04:15
+LastEditTime: 2022-07-21 13:39:44
 LastEditors: wondereamer wells7.wong@gmail.com
 Description: 打开koroFileHeader查看配置 进行设置: https://github.com/OBKoro1/koro1FileHeader/wiki/%E9%85%8D%E7%BD%AE
 FilePath: /machine-learning/ml/widgets/plotter.py
@@ -76,12 +76,9 @@ class LinePlotter(SliderPlotter):
     def __init__(self, axes, upper, lower, name="Line"):
         super(LinePlotter, self).__init__(axes, name, upper, lower)
 
-    def plot(self, x, y, twinx, *args, **kwargs):
-        if twinx:
-            ax = self.ax.twinx()
-        else:
-            ax = self.ax
-        ax.plot(x, y, *args, **kwargs)
+    def plot(self, x, y, *args, **kwargs):
+        plot = self.ax.plot(x, y, *args, **kwargs)
+        return plot
 
 
 class Volume(SliderPlotter):

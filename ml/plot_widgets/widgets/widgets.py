@@ -1,7 +1,7 @@
 '''
 Author: your name
 Date: 2022-02-12 08:05:30
-LastEditTime: 2022-07-03 11:52:16
+LastEditTime: 2022-07-21 13:40:20
 LastEditors: wondereamer wells7.wong@gmail.com
 Description: 打开koroFileHeader查看配置 进行设置: https://github.com/OBKoro1/koro1FileHeader/wiki/%E9%85%8D%E7%BD%AE
 FilePath: /machine-learning/ml/widgets/fame_widgets.py
@@ -13,7 +13,7 @@ from matplotlib.collections import LineCollection
 from matplotlib.widgets import MultiCursor
 
 from typing import List, Dict
-from ml.plot_widgets.plotters.plotter import Candles, LinePlotter, SliderPlotter
+from ml.plot_widgets.plotters.plotter import Candles, LinePlotter, SliderPlotter, Volume
 from ml.plot_widgets.base import BaseAxesWidget
 from ml.plot_widgets.formater import TimeFormatter
 from ml.plot_widgets.events import MouseMotionEvent, ButtonPressEvent
@@ -185,14 +185,13 @@ class CandleWidget(Widget):
         return [self._data.row[t] for t in data.index] # TODO 优化，计算出初始偏移
 
     def plot_line(self, name, data, *args, **kwargs):
-        # 默认共用axes, 绕过了窗口设置
-        ax = self.ax
+        ax = self.ax.twinx()
         if len(data.index) != self.widget_size:
             data = data.reindex(self._data.index)
         line = LinePlotter(ax, data, data, name)
-        plot = line.plot(range(0, len(data)), data, True, *args, **kwargs)
-        self.add_plotter(line, False)
-        return plot
+        plot = line.plot(range(0, len(data)), data, *args, **kwargs)
+        self.add_plotter(line, update_xy_lim=False)
+        return ax, plot
 
     def plot_indicators(self, indicators: List[Dict]):
         for i, indic in enumerate(indicators):
@@ -220,12 +219,15 @@ class CandleWidget(Widget):
     def plot_trades(self, trades):
         data = []
         colors = []
+        log.info("profit:--------------")
         for trade in trades:
             # trade.open_price可能偏移出当前窗口，无法显示。及有可能是价格的问题。
             # 可以做冗余显示，把价格也标出来。只标成交价容易忽视问题。 
             # ((x0, y0), (x1, y1))
-            p = ((self._data.row[trade.entry_time], self._data.open[trade.entry_time]),
-                 (self._data.row[trade.exit_time], self._data.open[trade.exit_time]))
+            p = ((self._data.row[trade.entry_time], trade.entry_price),
+                 (self._data.row[trade.exit_time], trade.exit_price))
+                #  (self._data.row[trade.exit_time], self._data.open[trade.exit_time]))
+            log.info(trade.profit / trade.quantity)
             data.append(p)
             colors.append("r" if trade.profit > 0 else "g")
         use_tuple = 0
@@ -352,4 +354,19 @@ class TechWidget(Widget):
         elif "Slow" in indicator["info"]["indicator"]:
             self.plot_line(indicator["values"], name, True, False, c="b")
         else:
-            self.plot_bar(indicator["values"], "MACD.Signal", False, True)
+            self.plot_bar(indicator["values"], "MACD", False, True)
+
+    def plot_adx(self, indicator):
+        name = indicator["info"]["indicator"]
+        if "PDI" in indicator["info"]["indicator"]:
+            self.plot_line(indicator["values"], name, True, False, lw=0.5, c="r")
+        elif "MDI" in indicator["info"]["indicator"]:
+            self.plot_line(indicator["values"], name, True, False, lw=0.5, c="y")
+        else:
+            self.plot_line(indicator["values"], "ADX", False, True, c="blue")
+        self.ax.axhline(y=50, c='gray', ls='--')
+
+    def plot_volume(self, open, close, volume):
+        volume_plotter = Volume(open, close, volume)
+        volume_plotter.plot(self.ax)
+        self.add_plotter(volume_plotter, True)

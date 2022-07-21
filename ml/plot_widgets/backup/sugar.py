@@ -52,9 +52,9 @@ def process_signal(signal, price_data, n=10, intraday=False):
     entry_Nlist = []
     exit_Nlist = []
     for i in range(len(data)):
-        startt = signal.index[i]
+        startt = signal.index[i]  # 开仓时间
         startpos = price_data.index.searchsorted(startt)
-        endt = signal.loc[i, ['exit_datetime']][0]
+        endt = signal.loc[i, ['exit_datetime']][0]   # 平仓时间
         endpos = price_data.index.searchsorted(endt)
         tradingdf = price_data.truncate(before=startt, after = endt) # 当笔交易间的价格数据
 
@@ -103,10 +103,10 @@ def process_signal(signal, price_data, n=10, intraday=False):
         exit_Nlist.append(exit_end - exit_begin)
         islongs.append(onetrade['islong'])
 
-        position_prices = price_data.loc[entry_begin: entry_end, PRICE]
-        exit_prices = price_data.loc[exit_begin: exit_end, PRICE]
+        position_prices = price_data.loc[entry_begin: entry_end, PRICE]   # 开平仓期间的所有价格
+        exit_prices = price_data.loc[exit_begin: exit_end, PRICE]    # 平仓后的一个时间段内的价格， 用于分析平仓后的情况。
         if onetrade['islong']:
-            entry_nbar_bests.append(position_prices.max() - onetrade['entry_price'])
+            entry_nbar_bests.append(position_prices.max() - onetrade['entry_price'])  # 开平仓期间的最优价格
             entry_nbar_worsts.append(position_prices.min() - onetrade['entry_price'])
             exit_nbar_bests.append(exit_prices.max() - onetrade['entry_price'])
             exit_nbar_worsts.append(exit_prices.min() - onetrade['entry_price'])
@@ -141,56 +141,3 @@ def load_datas(n, intraday, signal_fname, price_fname):
     #six.print_(data)
     #assert(False)
 
-
-def load_wavedata(*fnames):
-    '''
-        dj1, dj2 = load_wavedata("namea", "nameb")
-        djx --- (wave, wave_r_entry)
-        return: 
-            ((wave_timestamp, DataFrame('pre','after')))
-    '''
-    def fnameparse(fname):
-        '''
-        return entry_wave_info and wave
-        ''' 
-        home = os.getcwd() + "/data/" 
-        return "".join([home, "trace/", fname,"_trade_wave.txt"]), "".join([home, "trace/", fname, "_wave.txt"])
-
-    def process_session(data):
-        '''''' 
-        index = data[0]
-        pre_en_wave = []
-        after_en_wave = []
-        ispre = True
-        for line in data[1:]:
-            issep = line.startswith("=")
-            if ispre and not issep:
-                pre_en_wave.append(line)
-            if issep:
-                ispre = False
-            if not ispre and not issep:
-                after_en_wave.append(line)
-        return [index, pre_en_wave, after_en_wave]
-
-    rst = []
-    for fname in fnames:
-        # code...
-        tw_name, w_name = fnameparse(fname)
-        wave_ts = []
-        ses = []
-        entroinfo = []
-        for line in open(w_name):
-            wave_ts.append(line.rstrip("\n"))
-        for line in open(tw_name):
-            line = line.rstrip("\n")
-            ses.append(line)
-            if line.startswith('-'):
-                # session begin
-                ses.pop()
-                if ses:
-                    entroinfo.append(process_session(ses))
-                ses = []
-        entroinfo.append(process_session(ses))
-        d = zip(*entroinfo)
-    rst.append((wave_ts, pd.DataFrame({'pre':d[1], 'after':d[2]}, index=d[0])))
-    return tuple(rst)
