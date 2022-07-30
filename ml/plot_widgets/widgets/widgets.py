@@ -1,7 +1,7 @@
 '''
 Author: your name
 Date: 2022-02-12 08:05:30
-LastEditTime: 2022-07-21 13:40:20
+LastEditTime: 2022-07-30 08:22:17
 LastEditors: wondereamer wells7.wong@gmail.com
 Description: 打开koroFileHeader查看配置 进行设置: https://github.com/OBKoro1/koro1FileHeader/wiki/%E9%85%8D%E7%BD%AE
 FilePath: /machine-learning/ml/widgets/fame_widgets.py
@@ -170,11 +170,18 @@ class CandleWidget(Widget):
         self.signal_x = []
         self._indicators = {}
         assert len(price_data) == widget_size
+        self._extra_formatter_item = {}
 
-    def plot_candle(self):
+    def set_formatter_data(self, data: pd.DataFrame):
+        assert len(self._data) == len(data)
+        # TODO 数据源可来自外部或则其它窗口的Formatter计算的结果
+        # [window1], [window], [other source]
+        pass
+
+    def plot_candle(self, simple=False):
         # only plot candle use plotter, avoid other plot invoking y_interval
-        candles = Candles(self._data, 'candles')
-        candles.plot(self.ax)
+        candles = Candles(self._data, 'candles', alpha=0.5)
+        candles.plot(self.ax, simple)
         self.add_plotter(candles, True)
         delta = (self._data.index[1] - self._data.index[0])
         self.ax.xaxis.set_major_formatter(TimeFormatter(self._data.index, delta))
@@ -191,15 +198,21 @@ class CandleWidget(Widget):
         line = LinePlotter(ax, data, data, name)
         plot = line.plot(range(0, len(data)), data, *args, **kwargs)
         self.add_plotter(line, update_xy_lim=False)
+        self.update_formatter_ax(ax)
+        self._extra_formatter_item[name] = data
         return ax, plot
 
-    def plot_indicators(self, indicators: List[Dict]):
+    def update_formatter_ax(self, ax):
+        self.ax.format_coord = None
+        ax.format_coord = self._format_coord
+
+    def plot_indicators(self, indicators: List[Dict], colors=[]):
         for i, indic in enumerate(indicators):
             series: pd.Series = indic["values"]
             if len(series.index) != self.widget_size:
                 series = series.reindex(self._data.index)
-            self.ax.plot(range(0, len(series)), series)
-            self._indicators[indic["name"]] = series
+            self.ax.plot(range(0, len(series)), series, )
+            self._extra_formatter_item[indic["name"]] = series.values
 
     def _plot_signals(self, signals: pd.Series, color: str, marker: str, offset: float=-0.5):
         x = [self._data.row[time]+offset for time in signals.index]
@@ -227,7 +240,6 @@ class CandleWidget(Widget):
             p = ((self._data.row[trade.entry_time], trade.entry_price),
                  (self._data.row[trade.exit_time], trade.exit_price))
                 #  (self._data.row[trade.exit_time], self._data.open[trade.exit_time]))
-            log.info(trade.profit / trade.quantity)
             data.append(p)
             colors.append("r" if trade.profit > 0 else "g")
         use_tuple = 0
@@ -266,14 +278,19 @@ class CandleWidget(Widget):
         fmt = cursor_strtime_format(delta)
         ## @note 字符串太长会引起闪烁
         index = int(index)
-        time = self._data.index[index]
-        return "[index=%s, dt=%s, o=%.2f, c=%.2f, h=%.2f, l=%.2f]" % (
+        percent = ((self._data.close[index] - self._data.open[index]) / self._data.open[index] * 100).round(1)
+        info = ""
+        for key, values in self._extra_formatter_item.items():
+            info += ", %s=%s" % (key, values[index].round(1))
+        return "[index=%s, dt=%s, o=%.2f, c=%.2f, h=%.2f, l=%.2f, diff=%s%s]" % (
                 index,
                 self._data.index[index].strftime(fmt),
                 self._data['open'][index],
                 self._data['close'][index],
                 self._data['high'][index],
                 self._data['low'][index],
+                str(percent) + '%',
+                info
                 )
 
 class TechLimitWidget(Widget):

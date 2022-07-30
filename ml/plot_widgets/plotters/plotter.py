@@ -1,7 +1,7 @@
 '''
 Author: your name
 Date: 2022-02-19 10:04:35
-LastEditTime: 2022-07-21 13:39:44
+LastEditTime: 2022-07-23 17:22:23
 LastEditors: wondereamer wells7.wong@gmail.com
 Description: 打开koroFileHeader查看配置 进行设置: https://github.com/OBKoro1/koro1FileHeader/wiki/%E9%85%8D%E7%BD%AE
 FilePath: /machine-learning/ml/widgets/plotter.py
@@ -146,7 +146,7 @@ class Candles(SliderPlotter):
 
     # note this code assumes if any value open, close, low, high is
     # missing they all are missing
-    def plot(self, ax):
+    def plot(self, ax, simple=False):
         delta = self.width / 2.
         barVerts = [((i - delta, open),
                      (i - delta, close),
@@ -156,11 +156,6 @@ class Candles(SliderPlotter):
                                               self.data.open,
                                               self.data.close)
                     if open != -1 and close != -1]
-        rangeSegments = [((i, low), (i, high))
-                         for i, low, high in zip(range(len(self.data)),
-                                                 self.data.low,
-                                                 self.data.high)
-                         if low != -1]
         r, g, b = colorConverter.to_rgb(self.colorup)
         colorup = r, g, b, self.alpha
         r, g, b = colorConverter.to_rgb(self.colordown)
@@ -172,31 +167,41 @@ class Candles(SliderPlotter):
         colors = [colord[open < close]
                   for open, close in zip(self.data.open, self.data.close)
                   if open != -1 and close != -1]
-        assert(len(barVerts) == len(rangeSegments))
         useAA = 0,  # use tuple here
         lw = 0.5,   # and here
         r, g, b = colorConverter.to_rgb(self.lc)
         linecolor = r, g, b, self.alpha
-        self.lineCollection = LineCollection(rangeSegments,
-                                             colors=(linecolor,),
-                                             linewidths=lw,
-                                             antialiaseds=useAA,
-                                             zorder=0)
-
-        self.barCollection = PolyCollection(barVerts,
-                                            facecolors=colors,
-                                            edgecolors=colors,
-                                            antialiaseds=useAA,
-                                            linewidths=lw,
-                                            zorder=1)
         ax.autoscale_view()
-        # add these last
-        ax.add_collection(self.barCollection)
-        ax.add_collection(self.lineCollection)
-        return self.lineCollection, self.barCollection
+
+        if simple:
+            barCollection = None
+            rangeSegments = [((i, min(open, close)), (i, max(open, close)))
+                            for i, open, close in zip(range(len(self.data)),
+                                                    self.data.open,
+                                                    self.data.close)
+                            if min(open, close) != -1]
+        else:
+            rangeSegments = [((i, low), (i, high))
+                            for i, low, high in zip(range(len(self.data)),
+                                                    self.data.low,
+                                                    self.data.high)
+                            if low != -1]
+            barCollection = PolyCollection(barVerts,
+                    facecolors=colors, edgecolors=colors, antialiaseds=useAA, linewidths=lw, zorder=1)
+            ax.add_collection(barCollection)
+
+        lineCollection = LineCollection(rangeSegments,
+                colors=(linecolor,), linewidths=lw, antialiaseds=useAA, zorder=0)
+        ax.add_collection(lineCollection)
+
+
+        assert(len(barVerts) == len(rangeSegments))
+
+        return lineCollection, barCollection
 
     def on_slider(self, event):
-        if event.name == events.MouseMotionEvent:
-            self.barCollection.set_visible(False)
-        elif event.name == events.ButtonReleaseEvent:
-            self.barCollection.set_visible(True)
+        return
+        # if event.name == events.MouseMotionEvent:
+        #     self.barCollection.set_visible(False)
+        # elif event.name == events.ButtonReleaseEvent:
+        #     self.barCollection.set_visible(True)
